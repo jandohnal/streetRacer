@@ -413,15 +413,16 @@ class AudioEngine {
   }
 
   /**
-   * Přehraje buffer jako one-shot přímo do destination.
+   * Přehraje buffer jako one-shot přes masterGain (respektuje mute).
    * @private
    */
   _playOneShot(buffer, volume) {
     if (!buffer || !this._ctx) return;
+    if (!this._gains.master) return;
 
     const gainNode = this._ctx.createGain();
     gainNode.gain.value = volume;
-    gainNode.connect(this._ctx.destination);
+    gainNode.connect(this._gains.master);
 
     const src  = this._ctx.createBufferSource();
     src.buffer = buffer;

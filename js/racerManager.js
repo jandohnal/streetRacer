@@ -30,7 +30,7 @@ class RacerManager {
 
   /** @private */
   _nextInterval() {
-    return 20 + Math.random() * 20; // 20–40 s
+    return 8 + Math.random() * 7; // 8–15 s
   }
 
   /** @private */
@@ -70,9 +70,6 @@ class RacerManager {
         this._spawnTimer = this._nextInterval();
         this._spawnRacer();
       }
-    } else if (this._racers.length >= 2) {
-      // Počkáme dokud se jeden nevypne
-      this._spawnTimer = this._nextInterval();
     }
   }
 

@@ -6,9 +6,372 @@
  *
  * Každé auto je kresleno relativně k vlastnímu středu [0,0].
  * Pohyb je řízen pozicí středu Y (cy), která se aktualizuje každý frame.
+ *
+ * Přejezd pruhu:
+ *   Fáze SIGNAL  (0.5 s) — bliká zadní světlo ve směru přejezdu.
+ *   Fáze MOVING  (0.4 s) — plynule interpoluje _cx ze starého na nový pruh.
+ *   Po dokončení je laneIndex a _cx aktualizovány.
  */
 
+/** @enum {string} */
+const LaneChangeState = Object.freeze({
+  IDLE:   'idle',
+  SIGNAL: 'signal',
+  MOVING: 'moving',
+});
+
 class TrafficCar {
+  /**
+   * @param {SVGElement} svg        - Kořenový SVG element.
+   * @param {string}     type       - Typ vozidla (VehicleType).
+   * @param {number}     laneIndex  - Index pruhu (0–5).
+   * @param {number}     startY     - Počáteční Y střed vozidla (mimo obrazovku nahoře).
+   * @param {number}     roadSpeed  - Aktuální rychlost silnice px/s (při spawnu).
+   */
+  constructor(svg, type, laneIndex, startY, roadSpeed) {
+    /** @private */
+    this._svg = svg;
+
+    /** @type {string} */
+    this.type = type;
+
+    /** @private */
+    this._def = VEHICLE_DEFS[type];
+
+    /** Index pruhu (0–5), veřejný pro spawn logiku. */
+    this.laneIndex = laneIndex;
+
+    /** @private — X střed (interpoluje se při přejezdu) */
+    this._cx = LANE_CENTERS[laneIndex];
+
+    /** @private — Y střed (pohybuje se dolů) */
+    this._cy = startY;
+
+    /** @private — vlastní rychlost pohybu dolů v px/s */
+    this._speed = this._calcSpeed(roadSpeed);
+
+    /** @private — SVG skupina */
+    this._group = null;
+
+    /** @private — SVG element zadního levého světla */
+    this._rearLightLeft  = null;
+    /** @private — SVG element zadního pravého světla */
+    this._rearLightRight = null;
+
+    /** Příznak, zda je vozidlo aktivní (false = má být odstraněno). */
+    this.active = true;
+
+    // ─── Lane-change stav ───────────────────────────────────────────────────
+
+    /** @private */
+    this._lcState     = LaneChangeState.IDLE;
+    /** @private — cílový index pruhu */
+    this._lcTargetLane = -1;
+    /** @private — směr přejezdu: -1 = vlevo, +1 = vpravo */
+    this._lcDir       = 0;
+    /** @private — akumulovaný čas aktuální fáze */
+    this._lcTimer     = 0;
+    /** @private — X střed na začátku pohybu */
+    this._lcFromX     = 0;
+    /** @private — X střed cíle pohybu */
+    this._lcToX       = 0;
+
+    /** @private — čas bliknutí blinkru (akumulátor) */
+    this._blinkTimer  = 0;
+    /** @private — true = blinkr svítí */
+    this._blinkOn     = false;
+
+    this._createElements();
+  }
+
+  // ─── Privátní — výpočty ─────────────────────────────────────────────────────
+
+  /** @private */
+  _calcSpeed(roadSpeed) {
+    const { speedMin, speedMax } = this._def;
+    const factor = speedMin + Math.random() * (speedMax - speedMin);
+    return roadSpeed * factor;
+  }
+
+  // ─── Privátní — SVG ─────────────────────────────────────────────────────────
+
+  /** @private */
+  _createElements() {
+    const g = this._createElement('g');
+    const def = this._def;
+    const hw = def.width  / 2;
+    const hh = def.height / 2;
+    const color = def.colors[Math.floor(Math.random() * def.colors.length)];
+    const roofColor = this._darkenColor(color, 0.7);
+
+    // Karoserie
+    const body = this._createRect(-hw, -hh, def.width, def.height, color, 3);
+    g.appendChild(body);
+
+    // Střecha (závisí na typu)
+    this._addRoof(g, hw, hh, roofColor);
+
+    // Světla přední a zadní — zadní uložíme jako reference pro blinkr
+    this._addLights(g, hw, hh);
+
+    this._group = g;
+    this._svg.appendChild(g);
+    this._applyTransform();
+  }
+
+  /** @private */
+  _addRoof(g, hw, hh, roofColor) {
+    const def = this._def;
+
+    switch (this.type) {
+      case VehicleType.CAR: {
+        const rw = def.width  * 0.65;
+        const rh = def.height * 0.38;
+        g.appendChild(this._createRect(-rw / 2, -hh + def.height * 0.22, rw, rh, roofColor, 3));
+        break;
+      }
+      case VehicleType.VAN: {
+        const rw = def.width  * 0.88;
+        const rh = def.height * 0.55;
+        g.appendChild(this._createRect(-rw / 2, -hh + def.height * 0.04, rw, rh, roofColor, 2));
+        break;
+      }
+      case VehicleType.BUS: {
+        const rw = def.width  * 0.92;
+        const rh = def.height * 0.82;
+        g.appendChild(this._createRect(-rw / 2, -hh + def.height * 0.05, rw, rh, roofColor, 1));
+        this._addBusWindows(g, hw, hh);
+        break;
+      }
+      case VehicleType.TRUCK: {
+        const cabH = def.height * 0.30;
+        const cabW = def.width  * 0.90;
+        g.appendChild(this._createRect(-cabW / 2, -hh + 4, cabW, cabH, roofColor, 2));
+        const cargoH = def.height * 0.55;
+        const cargoColor = this._darkenColor(roofColor, 0.85);
+        g.appendChild(this._createRect(-hw + 2, -hh + cabH + 8, def.width - 4, cargoH, cargoColor, 1));
+        break;
+      }
+    }
+  }
+
+  /** @private */
+  _addBusWindows(g, hw, hh) {
+    const winW = 8;
+    const winH = 12;
+    const winColor = '#a8d8f0';
+    const rows = 3;
+    const startY = -hh + 14;
+    const gapY = 22;
+
+    for (let row = 0; row < rows; row++) {
+      g.appendChild(this._createRect(-hw + 5, startY + row * gapY, winW, winH, winColor, 1));
+      g.appendChild(this._createRect(hw - winW - 5, startY + row * gapY, winW, winH, winColor, 1));
+    }
+  }
+
+  /** @private */
+  _addLights(g, hw, hh) {
+    const lw = 7;
+    const lh = 4;
+
+    // Přední světla
+    g.appendChild(this._createRect(-hw + 3,      -hh + 3, lw, lh, '#ffffaa', 1));
+    g.appendChild(this._createRect(hw - lw - 3, -hh + 3, lw, lh, '#ffffaa', 1));
+
+    // Zadní světla — uchováme reference pro blinkr
+    this._rearLightLeft  = this._createRect(-hw + 3,      hh - lh - 3, lw, lh, '#ff4444', 1);
+    this._rearLightRight = this._createRect(hw - lw - 3, hh - lh - 3, lw, lh, '#ff4444', 1);
+    g.appendChild(this._rearLightLeft);
+    g.appendChild(this._rearLightRight);
+  }
+
+  /** @private */
+  _createElement(tag) {
+    return document.createElementNS('http://www.w3.org/2000/svg', tag);
+  }
+
+  /** @private */
+  _createRect(x, y, w, h, fill, rx = 0) {
+    const rect = this._createElement('rect');
+    rect.setAttribute('x', x);
+    rect.setAttribute('y', y);
+    rect.setAttribute('width', w);
+    rect.setAttribute('height', h);
+    rect.setAttribute('fill', fill);
+    if (rx > 0) rect.setAttribute('rx', rx);
+    return rect;
+  }
+
+  /** @private */
+  _applyTransform() {
+    this._group.setAttribute('transform', `translate(${this._cx}, ${this._cy})`);
+  }
+
+  /**
+   * Aktualizuje blinkr — bliká světlem ve směru přejezdu.
+   * @private
+   * @param {number} dt
+   */
+  _updateBlinker(dt) {
+    const BLINK_INTERVAL = 0.22; // s — perioda blikání
+    this._blinkTimer += dt;
+    if (this._blinkTimer >= BLINK_INTERVAL) {
+      this._blinkTimer -= BLINK_INTERVAL;
+      this._blinkOn = !this._blinkOn;
+    }
+
+    const blinkColor  = this._blinkOn ? '#ffaa00' : '#ff4444';
+    const steadyColor = '#ff4444';
+
+    if (this._lcDir < 0) {
+      // Bliká levé zadní světlo
+      this._rearLightLeft.setAttribute('fill',  blinkColor);
+      this._rearLightRight.setAttribute('fill', steadyColor);
+    } else {
+      // Bliká pravé zadní světlo
+      this._rearLightLeft.setAttribute('fill',  steadyColor);
+      this._rearLightRight.setAttribute('fill', blinkColor);
+    }
+  }
+
+  /**
+   * Vrátí zadní světla do výchozích barev (po dokončení přejezdu).
+   * @private
+   */
+  _resetBlinker() {
+    this._blinkOn    = false;
+    this._blinkTimer = 0;
+    this._rearLightLeft.setAttribute('fill',  '#ff4444');
+    this._rearLightRight.setAttribute('fill', '#ff4444');
+  }
+
+  /**
+   * Easing funkce pro plynulý přejezd (cubic ease-in-out).
+   * @private
+   * @param {number} t - 0–1
+   * @returns {number}
+   */
+  _easeInOut(t) {
+    return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
+  }
+
+  /** @private */
+  _darkenColor(hex, factor) {
+    const r = parseInt(hex.slice(1, 3), 16);
+    const g = parseInt(hex.slice(3, 5), 16);
+    const b = parseInt(hex.slice(5, 7), 16);
+    const d = (v) => Math.max(0, Math.round(v * factor)).toString(16).padStart(2, '0');
+    return `#${d(r)}${d(g)}${d(b)}`;
+  }
+
+  // ─── Veřejné metody ─────────────────────────────────────────────────────────
+
+  /**
+   * Aktualizuje pozici vozidla každý frame.
+   * @param {number} dt
+   * @param {number} roadSpeed
+   */
+  update(dt, roadSpeed) {
+    const relativeSpeed = roadSpeed - this._speed;
+    this._cy += relativeSpeed * dt;
+
+    // Lane-change stavový automat
+    if (this._lcState === LaneChangeState.SIGNAL) {
+      this._updateBlinker(dt);
+      this._lcTimer += dt;
+      if (this._lcTimer >= 0.5) {
+        // Přejdi do fáze pohybu
+        this._lcState  = LaneChangeState.MOVING;
+        this._lcTimer  = 0;
+        this._lcFromX  = this._cx;
+        this._lcToX    = LANE_CENTERS[this._lcTargetLane];
+      }
+
+    } else if (this._lcState === LaneChangeState.MOVING) {
+      this._updateBlinker(dt);
+      this._lcTimer += dt;
+      const MOVE_DURATION = 0.4;
+      const t = Math.min(this._lcTimer / MOVE_DURATION, 1);
+      this._cx = this._lcFromX + (this._lcToX - this._lcFromX) * this._easeInOut(t);
+
+      if (t >= 1) {
+        // Přejezd dokončen
+        this._cx       = this._lcToX;
+        this.laneIndex = this._lcTargetLane;
+        this._lcState  = LaneChangeState.IDLE;
+        this._lcTimer  = 0;
+        this._resetBlinker();
+      }
+    }
+
+    this._applyTransform();
+
+    if (this._cy - this._def.height / 2 > CANVAS.HEIGHT + 20) {
+      this.active = false;
+    }
+  }
+
+  /**
+   * Zahájí přejezd do sousedního pruhu.
+   * Ignorováno pokud přejezd již probíhá.
+   * @param {number} targetLane - Cílový index pruhu (musí být laneIndex ±1).
+   */
+  startLaneChange(targetLane) {
+    if (this._lcState !== LaneChangeState.IDLE) return;
+    this._lcTargetLane = targetLane;
+    this._lcDir        = targetLane > this.laneIndex ? 1 : -1;
+    this._lcState      = LaneChangeState.SIGNAL;
+    this._lcTimer      = 0;
+    this._blinkTimer   = 0;
+    this._blinkOn      = true;
+  }
+
+  /** Vrátí true pokud auto právě přejíždí pruh (fáze SIGNAL nebo MOVING). */
+  get isChangingLane() {
+    return this._lcState !== LaneChangeState.IDLE;
+  }
+
+  /**
+   * Vrátí AABB hitbox ve světových souřadnicích.
+   * @returns {{ x: number, y: number, width: number, height: number }}
+   */
+  getHitbox() {
+    const hw = this._def.width  / 2;
+    const hh = this._def.height / 2;
+    return {
+      x:      this._cx - hw,
+      y:      this._cy - hh,
+      width:  this._def.width,
+      height: this._def.height,
+    };
+  }
+
+  /** @returns {number} */
+  get cy() { return this._cy; }
+
+  /** @returns {number} */
+  get speed() { return this._speed; }
+
+  /** @returns {number} */
+  get height() { return this._def.height; }
+
+  /**
+   * Přizpůsobí vlastní rychlost na rychlost předního vozidla.
+   * @param {number} leaderSpeed
+   */
+  matchSpeed(leaderSpeed) {
+    this._speed = leaderSpeed;
+  }
+
+  /** Odstraní SVG skupinu z dokumentu. */
+  remove() {
+    if (this._group && this._group.parentNode) {
+      this._group.parentNode.removeChild(this._group);
+    }
+  }
+}
+
   /**
    * @param {SVGElement} svg        - Kořenový SVG element.
    * @param {string}     type       - Typ vozidla (VehicleType).

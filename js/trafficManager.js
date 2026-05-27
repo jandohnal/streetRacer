@@ -113,6 +113,9 @@ class TrafficManager {
     // Přizpůsobení rychlosti — prevence prolínání vozidel ve stejném pruhu
     this._applyFollowLogic();
 
+    // Náhodné přejezdy pruhů
+    this._updateLaneChanges(dt);
+
     // Odstranění neaktivních
     const inactive = this._cars.filter(c => !c.active);
     for (const car of inactive) car.remove();
@@ -125,6 +128,60 @@ class TrafficManager {
       this._spawnTimer = interval;
       this._spawnVehicle(roadSpeed);
     }
+  }
+
+  /**
+   * Náhodně iniciuje přejezd pruhu u vhodných aut.
+   * Auto může přejet pouze pokud:
+   *  - Momentálně nepřejíždí.
+   *  - Je viditelné na plátně (cy > 0).
+   *  - Cílový pruh existuje (0–LANE_COUNT-1).
+   *  - Cílový pruh není obsazen jiným autem v blízkém Y rozsahu.
+   * @private
+   * @param {number} dt
+   */
+  _updateLaneChanges(dt) {
+    // Pravděpodobnost pokusu o přejezd na auto za sekundu
+    const CHANCE_PER_SEC = 0.18;
+
+    for (const car of this._cars) {
+      if (car.isChangingLane) continue;
+      // Auto musí být na obrazovce
+      if (car.cy < 0 || car.cy > CANVAS.HEIGHT) continue;
+
+      // Náhodný pokus
+      if (Math.random() > CHANCE_PER_SEC * dt) continue;
+
+      // Vyber náhodný směr (vlevo nebo vpravo)
+      const dir = Math.random() < 0.5 ? -1 : 1;
+      const targetLane = car.laneIndex + dir;
+
+      // Zkontroluj hranice silnice
+      if (targetLane < 0 || targetLane >= ROAD.LANE_COUNT) continue;
+
+      // Zkontroluj, zda cílový pruh není obsazen v blízkém Y rozsahu
+      if (!this._isLaneClearForChange(car, targetLane)) continue;
+
+      car.startLaneChange(targetLane);
+    }
+  }
+
+  /**
+   * Zkontroluje, zda pruh je volný pro přejezd daného auta.
+   * Porovnává Y rozsah auta s ostatními auty v cílovém pruhu.
+   * @private
+   * @param {TrafficCar} car
+   * @param {number} targetLane
+   * @returns {boolean}
+   */
+  _isLaneClearForChange(car, targetLane) {
+    const safeGap = car.height * 1.2;
+    for (const other of this._cars) {
+      if (other === car) continue;
+      if (other.laneIndex !== targetLane) continue;
+      if (Math.abs(other.cy - car.cy) < safeGap) return false;
+    }
+    return true;
   }
 
   /**

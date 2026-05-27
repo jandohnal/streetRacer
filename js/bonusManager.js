@@ -34,13 +34,13 @@ class BonusManager {
 
   /** @private */
   _initialDelay() {
-    return 8 + Math.random() * 7;   // 8–15 s od startu
+    return 5 + Math.random() * 5;   // 5–10 s od startu
   }
 
   /** @private */
   _calcSpawnInterval() {
-    // Bonus každých 20–35 sekund (vzácný)
-    return 20 + Math.random() * 15;
+    // Bonus každých 15–20 sekund
+    return 15 + Math.random() * 5;
   }
 
   /** @private */

@@ -91,11 +91,17 @@ class PlayerCar {
 
     if (this._spriteImg) {
       // ── PNG sprite ─────────────────────────────────────────────────────────
+      // Sprite je 1024×1024 s autem uprostřed — renderujeme větší plochu
+      // aby auto vizuálně odpovídalo ostatním vozidlům.
+      // Hitbox zůstává PLAYER.WIDTH × PLAYER.HEIGHT (nezměněn).
+      const SPRITE_SCALE = 3.5;
+      const sw = PLAYER.WIDTH  * SPRITE_SCALE;
+      const sh = PLAYER.HEIGHT * SPRITE_SCALE;
       const img = this._createElement('image');
-      img.setAttribute('x',      -hw);
-      img.setAttribute('y',      -hh);
-      img.setAttribute('width',  PLAYER.WIDTH);
-      img.setAttribute('height', PLAYER.HEIGHT);
+      img.setAttribute('x',      -sw / 2);
+      img.setAttribute('y',      -sh / 2);
+      img.setAttribute('width',  sw);
+      img.setAttribute('height', sh);
       img.setAttribute('href',   this._spriteImg.src);
       img.setAttribute('image-rendering', 'auto');
       g.appendChild(img);

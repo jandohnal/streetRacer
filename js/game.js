@@ -181,6 +181,7 @@ class Game {
     this._bonusManager   = new BonusManager(this._svg, this._trafficManager);
     this._racerManager   = new RacerManager(this._svg);
     this._scoreSystem    = new ScoreSystem();
+    this._leaderboard    = new Leaderboard();
     this._hud            = new Hud();
 
     // Hráčovo auto musí být vždy nad ostatními objekty
@@ -208,6 +209,8 @@ class Game {
     this._hud.showStart();
     this._hud.onStartClick(() => this._handleStartClick());
     this._hud.onCloseClick(() => this._handleCloseClick());
+    this._hud.onSubmitScore((name) => this._handleSubmitScore(name));
+    this._hud.onLeaderboardClick(() => this._handleLeaderboardClick());
   }
 
   // ─── Inicializace ────────────────────────────────────────────────────────────
@@ -320,6 +323,32 @@ class Game {
     if (this._state !== GameState.GAME_OVER) return;
     this._state = GameState.IDLE;
     this._hud.showStart();
+  }
+
+  /**
+   * Uloží skóre do Firestore.
+   * @private
+   * @param {string} name
+   */
+  async _handleSubmitScore(name) {
+    this._hud.setScoreSaveStatus('loading');
+    const ok = await this._leaderboard.saveScore(
+      name,
+      this._scoreSystem.totalScore,
+      this._scoreSystem.distanceMeters,
+      this._scoreSystem.coinCount
+    );
+    this._hud.setScoreSaveStatus(ok ? 'ok' : 'err');
+  }
+
+  /**
+   * Načte a zobrazí leaderboard.
+   * @private
+   */
+  async _handleLeaderboardClick() {
+    this._hud.showLeaderboard([]);  // okamžitě otevři s prázdným stavem
+    const entries = await this._leaderboard.getTopScores();
+    this._hud.showLeaderboard(entries);
   }
 
   /**

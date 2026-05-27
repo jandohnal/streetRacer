@@ -303,7 +303,7 @@ class TrafficCar {
     if (this._lcState === LaneChangeState.SIGNAL) {
       this._updateBlinker(dt);
       this._lcTimer += dt;
-      if (this._lcTimer >= 0.5) {
+      if (this._lcTimer >= 1.0) {
         this._lcState = LaneChangeState.MOVING;
         this._lcTimer = 0;
         this._lcFromX = this._cx;

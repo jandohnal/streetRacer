@@ -11,6 +11,7 @@ class Hud {
     this._elScore    = document.getElementById('hud-score-value');
     this._elDistance = document.getElementById('hud-distance-value');
     this._elSpeed    = document.getElementById('hud-speed-value');
+    this._elCoins    = document.getElementById('hud-coins-value');
 
     // Overlay panel
     this._overlay        = document.getElementById('overlay');
@@ -33,11 +34,13 @@ class Hud {
    * @param {number} score        - Celkové skóre.
    * @param {number} distanceMeters - Vzdálenost v metrech.
    * @param {number} speedPxPerS  - Rychlost silnice v px/s.
+   * @param {number} coinCount    - Počet nasbíraných mincí.
    */
-  update(score, distanceMeters, speedPxPerS) {
+  update(score, distanceMeters, speedPxPerS, coinCount) {
     this._elScore.textContent    = score;
     this._elDistance.textContent = `${distanceMeters} m`;
     this._elSpeed.textContent    = `${Math.round(speedPxPerS * PHYSICS.PX_PER_S_TO_KMH)} km/h`;
+    this._elCoins.textContent    = coinCount;
   }
 
   // ─── Overlay ─────────────────────────────────────────────────────────────────

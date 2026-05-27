@@ -77,6 +77,10 @@ html, body {
   min-width: 0;
 }
 
+#hud-coins .hud-value {
+  color: #FFD700;
+}
+
 .hud-label {
   font-size: 9px;
   letter-spacing: 0.08em;

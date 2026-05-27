@@ -321,7 +321,7 @@ class Game {
     this._inputManager.setEnabled(true);
 
     this._hud.hideOverlay();
-    this._hud.update(0, 0, this._speed);
+    this._hud.update(0, 0, this._speed, 0);
 
     // Spustíme herní smyčku
     this._rafHandle = requestAnimationFrame((ts) => this._gameLoop(ts));
@@ -451,7 +451,8 @@ class Game {
     this._hud.update(
       this._scoreSystem.totalScore,
       this._scoreSystem.distanceMeters,
-      this._speed
+      this._speed,
+      this._scoreSystem.coinCount
     );
 
     // 14. Zvukový engine

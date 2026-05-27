@@ -179,7 +179,17 @@ class TrafficCar {
     g.appendChild(this._createRect(-hw + 3,      -hh + 3, lw, lh, '#ffffaa', 1));
     g.appendChild(this._createRect(hw - lw - 3, -hh + 3, lw, lh, '#ffffaa', 1));
 
-    // Zadní světla — uchováme reference pro blinkr
+    // Beam glow kružnice za zadními světly (zpočátku neviditelné)
+    const glowY = hh - lh - 3 + lh / 2;
+    const glowLx = -hw + 3 + lw / 2;
+    const glowRx =  hw - lw - 3 + lw / 2;
+
+    this._beamLeft  = this._createCircle(glowLx, glowY, 9, '#ffaa00', 0);
+    this._beamRight = this._createCircle(glowRx, glowY, 9, '#ffaa00', 0);
+    g.appendChild(this._beamLeft);
+    g.appendChild(this._beamRight);
+
+    // Zadní světla — uchováme reference pro blinkr (vykreslíme nad glow)
     this._rearLightLeft  = this._createRect(-hw + 3,      hh - lh - 3, lw, lh, '#ff4444', 1);
     this._rearLightRight = this._createRect(hw - lw - 3, hh - lh - 3, lw, lh, '#ff4444', 1);
     g.appendChild(this._rearLightLeft);
@@ -204,12 +214,23 @@ class TrafficCar {
   }
 
   /** @private */
+  _createCircle(cx, cy, r, fill, opacity) {
+    const c = this._createElement('circle');
+    c.setAttribute('cx', cx);
+    c.setAttribute('cy', cy);
+    c.setAttribute('r', r);
+    c.setAttribute('fill', fill);
+    c.setAttribute('opacity', opacity);
+    return c;
+  }
+
+  /** @private */
   _applyTransform() {
     this._group.setAttribute('transform', `translate(${this._cx}, ${this._cy})`);
   }
 
   /**
-   * Aktualizuje blinkr — bliká světlem ve směru přejezdu.
+   * Aktualizuje blinkr — bliká světlem ve směru přejezdu + beam glow.
    * @private
    * @param {number} dt
    */
@@ -222,14 +243,21 @@ class TrafficCar {
     }
 
     const blinkColor  = this._blinkOn ? '#ffaa00' : '#ff4444';
+    const beamOpacity = this._blinkOn ? '0.45'    : '0';
     const steadyColor = '#ff4444';
 
     if (this._lcDir < 0) {
-      this._rearLightLeft.setAttribute('fill',  blinkColor);
-      this._rearLightRight.setAttribute('fill', steadyColor);
+      // Bliká levé zadní světlo + levý beam
+      this._rearLightLeft.setAttribute('fill',   blinkColor);
+      this._beamLeft.setAttribute('opacity',      beamOpacity);
+      this._rearLightRight.setAttribute('fill',  steadyColor);
+      this._beamRight.setAttribute('opacity',     '0');
     } else {
-      this._rearLightLeft.setAttribute('fill',  steadyColor);
-      this._rearLightRight.setAttribute('fill', blinkColor);
+      // Bliká pravé zadní světlo + pravý beam
+      this._rearLightLeft.setAttribute('fill',   steadyColor);
+      this._beamLeft.setAttribute('opacity',      '0');
+      this._rearLightRight.setAttribute('fill',  blinkColor);
+      this._beamRight.setAttribute('opacity',     beamOpacity);
     }
   }
 
@@ -239,6 +267,8 @@ class TrafficCar {
     this._blinkTimer = 0;
     this._rearLightLeft.setAttribute('fill',  '#ff4444');
     this._rearLightRight.setAttribute('fill', '#ff4444');
+    this._beamLeft.setAttribute('opacity',  '0');
+    this._beamRight.setAttribute('opacity', '0');
   }
 
   /**

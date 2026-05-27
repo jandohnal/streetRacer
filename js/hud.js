@@ -24,6 +24,10 @@ class Hud {
     this._elResultScore    = document.getElementById('result-score');
     this._elResultDistance = document.getElementById('result-distance');
     this._elResultCoins    = document.getElementById('result-coins');
+
+    // Anti-radar odpočet
+    this._elAntiradar      = document.getElementById('hud-antiradar');
+    this._elAntiradaTimer  = document.getElementById('hud-antirada-timer');
   }
 
   // ─── HUD ─────────────────────────────────────────────────────────────────────
@@ -94,6 +98,19 @@ class Hud {
    */
   hideOverlay() {
     this._overlay.classList.add('hidden');
+  }
+
+  /**
+   * Zobrazí nebo aktualizuje odpočet anti-radaru v pravém horním rohu.
+   * @param {number} remainingSeconds - Zbývající sekundy (0 = skryj).
+   */
+  updateAntiRadar(remainingSeconds) {
+    if (remainingSeconds > 0) {
+      this._elAntiradar.classList.remove('hidden');
+      this._elAntiradaTimer.textContent = Math.ceil(remainingSeconds);
+    } else {
+      this._elAntiradar.classList.add('hidden');
+    }
   }
 
   /**

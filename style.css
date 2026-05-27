@@ -289,6 +289,55 @@ html, body {
 }
 
 /* ============================================================
+   Anti-radar HUD (pravý horní roh)
+   ============================================================ */
+.hud-antiradar {
+  position: absolute;
+  top: 8px;
+  right: 12px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(0, 80, 200, 0.55);
+  border: 1.5px solid #1a8cff;
+  border-radius: 20px;
+  padding: 4px 10px 4px 8px;
+  z-index: 11;
+  pointer-events: none;
+  box-shadow: 0 0 10px rgba(26, 140, 255, 0.5);
+  animation: antiradar-pulse 1s ease-in-out infinite;
+}
+
+.hud-antiradar.hidden {
+  display: none !important;
+}
+
+@keyframes antiradar-pulse {
+  0%, 100% { box-shadow: 0 0 8px rgba(26, 140, 255, 0.5); }
+  50%       { box-shadow: 0 0 18px rgba(26, 140, 255, 0.9); }
+}
+
+.antiradar-icon {
+  font-size: 13px;
+  color: #66b8ff;
+}
+
+.antirada-timer {
+  font-size: 16px;
+  font-weight: 900;
+  color: #fff;
+  letter-spacing: 0.04em;
+  min-width: 18px;
+  text-align: right;
+}
+
+.antirada-unit {
+  font-size: 11px;
+  color: #aad4ff;
+  font-weight: 600;
+}
+
+/* ============================================================
    Mute button (HUD)
    ============================================================ */
 .btn-mute {

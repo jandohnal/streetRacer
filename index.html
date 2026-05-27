@@ -33,6 +33,12 @@
       </button>
     </div>
 
+    <!-- Anti-radar odpočet (pravý horní roh, zobrazuje se jen při aktivním bonusu) -->
+    <div id="hud-antiradar" class="hud-antiradar hidden">
+      <span class="antiradar-icon">★</span>
+      <span id="hud-antirada-timer" class="antirada-timer">30</span><span class="antirada-unit">s</span>
+    </div>
+
     <!-- Start / Game Over overlay -->
     <div id="overlay" class="overlay">
       <div class="overlay-panel">
@@ -72,6 +78,8 @@
   <script src="js/policeManager.js"></script>
   <script src="js/coin.js"></script>
   <script src="js/coinManager.js"></script>
+  <script src="js/bonus.js"></script>
+  <script src="js/bonusManager.js"></script>
   <script src="js/collisionSystem.js"></script>
   <script src="js/scoreSystem.js"></script>
   <script src="js/hud.js"></script>

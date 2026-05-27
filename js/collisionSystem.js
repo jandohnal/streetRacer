@@ -66,6 +66,32 @@ const CollisionSystem = Object.freeze({
   },
 
   /**
+   * Zkontroluje, který bonus byl hráčem sebrán.
+   * Sebrané bonusy označí jako collected.
+   *
+   * @param {PlayerCar} playerCar - Hráčovo auto.
+   * @param {Bonus[]}   bonuses   - Pole aktivních bonusů.
+   * @returns {{ collected: Bonus[] }} Sebrané bonusy.
+   */
+  checkPlayerVsBonuses(playerCar, bonuses) {
+    const player = playerCar.getHitbox();
+    const pcx    = player.x + player.width  / 2;
+    const pcy    = player.y + player.height / 2;
+    const pr     = Math.min(player.width, player.height) / 2;
+
+    const collected = [];
+    for (const bonus of bonuses) {
+      if (!bonus.active) continue;
+      const { cx, cy, r } = bonus.getHitCircle();
+      if (Math.hypot(cx - pcx, cy - pcy) < pr + r) {
+        bonus.collect();
+        collected.push(bonus);
+      }
+    }
+    return { collected };
+  },
+
+  /**
    * Zkontroluje, zda hráč vstoupil do radaru policejního auta při překročení
    * rychlostního limitu.
    *

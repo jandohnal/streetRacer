@@ -178,6 +178,7 @@ class Game {
     this._trafficManager = new TrafficManager(this._svg);
     this._policeManager  = new PoliceManager(this._svg, this._trafficManager);
     this._coinManager    = new CoinManager(this._svg, this._trafficManager);
+    this._bonusManager   = new BonusManager(this._svg, this._trafficManager);
     this._scoreSystem    = new ScoreSystem();
     this._hud            = new Hud();
 
@@ -308,15 +309,20 @@ class Game {
     this._speed         = PHYSICS.SPEED_INITIAL;
     this._lastTimestamp = null;
 
+    /** @private — zbývající čas anti-radar bonusu (s), 0 = neaktivní */
+    this._antiRadarTimer = 0;
+
     // Reset všech systémů
     this._road.reset();
     this._playerCar.reset();
     this._trafficManager.reset();
     this._policeManager.reset();
     this._coinManager.reset();
+    this._bonusManager.reset();
     this._scoreSystem.reset();
     this._particleSystem.reset();
-    this._brakeHeldTime = 0;
+    this._brakeHeldTime  = 0;
+    this._antiRadarTimer = 0;
 
     this._inputManager.setEnabled(true);
 
@@ -396,6 +402,9 @@ class Game {
     // 6. Mince
     this._coinManager.update(dt, this._speed);
 
+    // 6b. Bonusy
+    this._bonusManager.update(dt, this._speed);
+
     // 7. Kolize — mince
     const coinResult = CollisionSystem.checkPlayerVsCoins(
       this._playerCar,
@@ -406,6 +415,25 @@ class Game {
       for (const pos of coinResult.positions) {
         this._particleSystem.spawnCoinBurst(pos.x, pos.y);
       }
+    }
+
+    // 7b. Kolize — bonusy
+    const bonusResult = CollisionSystem.checkPlayerVsBonuses(
+      this._playerCar,
+      this._bonusManager.getBonuses()
+    );
+    for (const bonus of bonusResult.collected) {
+      if (bonus.type === BonusType.ANTI_RADAR) {
+        this._antiRadarTimer = bonus.duration;
+        this._particleSystem.spawnCoinBurst(
+          ...(() => { const h = this._playerCar.getHitbox(); return [h.x + h.width / 2, h.y + h.height / 2]; })()
+        );
+      }
+    }
+
+    // 7c. Anti-radar odpočet
+    if (this._antiRadarTimer > 0) {
+      this._antiRadarTimer = Math.max(0, this._antiRadarTimer - dt);
     }
 
     // 8. Kolize — náraz do dopravního auta (crash)
@@ -429,11 +457,14 @@ class Game {
     }
 
     // 10. Kolize — radar policejního auta při vysoké rychlosti (busted)
-    const busted = CollisionSystem.checkPlayerVsPoliceRadar(
-      this._playerCar,
-      this._policeManager.getCars(),
-      this._speed
-    );
+    // Anti-radar bonus potlačuje detekci radaru
+    const busted = this._antiRadarTimer <= 0
+      ? CollisionSystem.checkPlayerVsPoliceRadar(
+          this._playerCar,
+          this._policeManager.getCars(),
+          this._speed
+        )
+      : null;
     if (busted !== null) {
       this._endGame(true);
       return;
@@ -453,6 +484,7 @@ class Game {
       this._scoreSystem.distanceMeters,
       this._speed
     );
+    this._hud.updateAntiRadar(this._antiRadarTimer);
 
     // 14. Zvukový engine
     this._audioEngine.update(

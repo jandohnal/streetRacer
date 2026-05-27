@@ -20,14 +20,14 @@
       appId:             "1:1010261990180:web:6d948db4da77be181231b1",
     });
     window._fbDb         = firebase.firestore();
-    // Firestore API metody vystavíme globálně pro leaderboard.js
+    // Wrapper aby leaderboard.js mohl používat stejné API
     window._fbFirestore  = {
-      collection: (db, path)       => db.collection(path),
-      addDoc:     (ref, data)      => ref.add(data),
-      query:      (ref, ...ops)    => ops.reduce((r, op) => op(r), ref),
-      orderBy:    (field, dir)     => ref => ref.orderBy(field, dir),
-      limit:      (n)              => ref => ref.limit(n),
-      getDocs:    (ref)            => ref.get(),
+      collection: (db, path)        => db.collection(path),
+      addDoc:     (ref, data)       => ref.add(data),
+      query:      (ref, ...ops)     => ops.reduce((r, op) => op(r), ref),
+      orderBy:    (field, dir)      => r => r.orderBy(field, dir),
+      limit:      (n)               => r => r.limit(n),
+      getDocs:    (ref)             => ref.get(),
     };
   </script>
 </head>

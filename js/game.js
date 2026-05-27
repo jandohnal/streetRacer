@@ -179,6 +179,7 @@ class Game {
     this._policeManager  = new PoliceManager(this._svg, this._trafficManager);
     this._coinManager    = new CoinManager(this._svg, this._trafficManager);
     this._bonusManager   = new BonusManager(this._svg, this._trafficManager);
+    this._racerManager   = new RacerManager(this._svg);
     this._scoreSystem    = new ScoreSystem();
     this._hud            = new Hud();
 
@@ -353,6 +354,7 @@ class Game {
     this._policeManager.reset();
     this._coinManager.reset();
     this._bonusManager.reset();
+    this._racerManager.reset();
     this._scoreSystem.reset();
     this._particleSystem.reset();
     this._brakeHeldTime  = 0;
@@ -439,6 +441,9 @@ class Game {
     // 6b. Bonusy
     this._bonusManager.update(dt, this._speed);
 
+    // 6c. Závodní soupeři
+    this._racerManager.update(dt, this._speed, this._trafficManager.getCars());
+
     // 7. Kolize — mince
     const coinResult = CollisionSystem.checkPlayerVsCoins(
       this._playerCar,
@@ -486,6 +491,16 @@ class Game {
       this._policeManager.getCars()
     );
     if (crashPolice !== null) {
+      this._endGame(false);
+      return;
+    }
+
+    // 9b. Kolize — náraz do závodního soupeře (crash)
+    const crashRacer = CollisionSystem.checkPlayerVsTraffic(
+      this._playerCar,
+      this._racerManager.getRacers()
+    );
+    if (crashRacer !== null) {
       this._endGame(false);
       return;
     }

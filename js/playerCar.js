@@ -387,4 +387,9 @@ class PlayerCar {
   get svgGroup() {
     return this._group;
   }
+
+  /** Vrátí aktuální cílový index pruhu (pro AI). */
+  get laneIndex() {
+    return this._laneIndex;
+  }
 }

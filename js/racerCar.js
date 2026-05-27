@@ -20,8 +20,9 @@ class RacerCar {
    * @param {SVGElement} svg       - Kořenový SVG element.
    * @param {number}     laneIndex - Počáteční pruh (0–5).
    * @param {number}     startY    - Počáteční Y (blízko spodního okraje).
+   * @param {number}     [roadSpeed=0] - Aktuální rychlost silnice (px/s) v okamžiku spawnu.
    */
-  constructor(svg, laneIndex, startY) {
+  constructor(svg, laneIndex, startY, roadSpeed = 0) {
     /** @private */
     this._svg = svg;
 
@@ -38,13 +39,16 @@ class RacerCar {
     this._h = 65;
 
     /** @private — vlastní absolutní rychlost (px/s) */
-    this._speed = PHYSICS.SPEED_INITIAL * 0.5; // začíná pomalu
+    // Cruise fáze: jen o trochu rychlejší než hráč, aby se zezadu postupně přiblížil.
+    this._speed = roadSpeed + 20 / PHYSICS.PX_PER_S_TO_KMH;
 
-    /** @private — cílová vlastní rychlost (px/s) */
-    this._targetSpeed = (220 + Math.random() * 30) / PHYSICS.PX_PER_S_TO_KMH;
+    /** @private — cílová rychlost v RACING fázi (px/s) */
+    const targetKmh = 220 + Math.random() * 30;
+    const targetPx  = targetKmh / PHYSICS.PX_PER_S_TO_KMH;
+    this._targetSpeed = Math.max(targetPx, roadSpeed + 40 / PHYSICS.PX_PER_S_TO_KMH);
 
-    /** @private — zda již začal závodit */
-    this._racing = false;
+    /** @private — fáze: 'CRUISING' | 'RACING' */
+    this._phase = 'CRUISING';
 
     /** @private — cooldown pro přejezd pruhu (s) */
     this._laneChangeCooldown = 0;
@@ -146,24 +150,42 @@ class RacerCar {
 
   /**
    * Hlavní update — volá se každý frame.
-   * @param {number}      dt
-   * @param {number}      roadSpeed    - Aktuální rychlost silnice (px/s).
-   * @param {TrafficCar[]} trafficCars - Všechna dopravní auta (pro vyhýbání).
+   * @param {number}       dt
+   * @param {number}       roadSpeed    - Aktuální rychlost silnice (px/s).
+   * @param {TrafficCar[]} trafficCars  - Všechna dopravní auta (pro vyhýbání).
+   * @param {PlayerCar}    [player]     - Hráč (pro vyhýbání).
    */
-  update(dt, roadSpeed, trafficCars) {
-    const playerKmh = roadSpeed * PHYSICS.PX_PER_S_TO_KMH;
-
-    // Aktivace závodění — hráč musí jet nad 130 km/h
-    if (!this._racing && playerKmh > 130) {
-      this._racing = true;
+  update(dt, roadSpeed, trafficCars, player) {
+    // Přechod fáze: jakmile racer doplaval do horní poloviny obrazovky → RACING.
+    if (this._phase === 'CRUISING' && this._cy < CANVAS.HEIGHT * 0.5) {
+      this._phase = 'RACING';
     }
 
-    // Zrychlování / udržování rychlosti
-    if (this._racing) {
-      const accel = 80; // px/s²
-      if (this._speed < this._targetSpeed) {
-        this._speed = Math.min(this._targetSpeed, this._speed + accel * dt);
-      }
+    // Cílová rychlost dle fáze
+    let desiredSpeed;
+    if (this._phase === 'CRUISING') {
+      // Cruise: o ~20 km/h rychlejší než hráč → pomalu se přibližuje zezadu.
+      desiredSpeed = roadSpeed + 20 / PHYSICS.PX_PER_S_TO_KMH;
+    } else {
+      desiredSpeed = this._targetSpeed;
+    }
+
+    // Brzdění před překážkou (auto vpředu nebo hráč) — sníží desiredSpeed.
+    const BRAKE_DIST = 90; // px — pokud je překážka blíž, zpomalí na její rychlost
+    const obstacle = this._findObstacleAhead(trafficCars, player, BRAKE_DIST);
+    if (obstacle) {
+      // Drž rychlost překážky (nepatrně méně) → nenarazí.
+      const obsSpeed = obstacle.isPlayer ? roadSpeed : obstacle.speed;
+      desiredSpeed = Math.min(desiredSpeed, obsSpeed);
+    }
+
+    // Plynulá akcelerace/decelerace k desiredSpeed
+    const ACCEL = 80;  // px/s²
+    const DECEL = 200; // px/s² (brzda silnější)
+    if (this._speed < desiredSpeed) {
+      this._speed = Math.min(desiredSpeed, this._speed + ACCEL * dt);
+    } else if (this._speed > desiredSpeed) {
+      this._speed = Math.max(desiredSpeed, this._speed - DECEL * dt);
     }
 
     // Pohyb: relativní rychlost vůči silnici
@@ -173,8 +195,8 @@ class RacerCar {
 
     // Vyhýbání pomalým autům vpředu + přejezdy
     this._laneChangeCooldown = Math.max(0, this._laneChangeCooldown - dt);
-    if (this._racing && !this._lcActive && this._laneChangeCooldown <= 0) {
-      this._considerLaneChange(trafficCars);
+    if (!this._lcActive && this._laneChangeCooldown <= 0) {
+      this._considerLaneChange(trafficCars, player);
     }
 
     // Animace přejezdu
@@ -197,24 +219,24 @@ class RacerCar {
     this._applyTransform();
 
     // Deaktivace — ujel příliš daleko před hráče
-    if (this._cy < -CANVAS.HEIGHT * 1.5) {
+    if (this._cy < -this._h) {
       this.active = false;
     }
-    // Deaktivace — zůstal příliš daleko za hráčem (hráč brzdil)
-    if (this._cy > CANVAS.HEIGHT + 100) {
+    // Deaktivace — zůstal příliš daleko za hráčem (hráč zrychlil a ujel)
+    if (this._cy > CANVAS.HEIGHT + 200) {
       this.active = false;
     }
   }
 
   /**
-   * Rozhodne zda a kam přejet pruh — vyhýbá se pomalým autům vpředu.
+   * Rozhodne zda a kam přejet pruh — vyhýbá se pomalým autům i hráči vpředu.
    * @private
    */
-  _considerLaneChange(trafficCars) {
+  _considerLaneChange(trafficCars, player) {
     const LOOK_AHEAD   = 180; // px před racerem — zóna detekce překážky
-    const blockLeft    = this._isLaneBlockedAhead(this.laneIndex - 1, trafficCars, LOOK_AHEAD);
-    const blockCurrent = this._isLaneBlockedAhead(this.laneIndex,     trafficCars, LOOK_AHEAD);
-    const blockRight   = this._isLaneBlockedAhead(this.laneIndex + 1, trafficCars, LOOK_AHEAD);
+    const blockLeft    = this._isLaneBlockedAhead(this.laneIndex - 1, trafficCars, player, LOOK_AHEAD);
+    const blockCurrent = this._isLaneBlockedAhead(this.laneIndex,     trafficCars, player, LOOK_AHEAD);
+    const blockRight   = this._isLaneBlockedAhead(this.laneIndex + 1, trafficCars, player, LOOK_AHEAD);
 
     let targetLane = -1;
 
@@ -229,7 +251,7 @@ class RacerCar {
       if (Math.random() < 0.015) {
         const dir = Math.random() < 0.5 ? -1 : 1;
         const t   = this.laneIndex + dir;
-        if (t >= 0 && t < ROAD.LANE_COUNT && !this._isLaneBlockedAhead(t, trafficCars, LOOK_AHEAD)) {
+        if (t >= 0 && t < ROAD.LANE_COUNT && !this._isLaneBlockedAhead(t, trafficCars, player, LOOK_AHEAD)) {
           targetLane = t;
         }
       }
@@ -241,18 +263,49 @@ class RacerCar {
   }
 
   /**
-   * Zjistí zda je v daném pruhu překážka před racerem.
+   * Zjistí zda je v daném pruhu překážka před racerem (traffic nebo hráč).
    * @private
    */
-  _isLaneBlockedAhead(lane, trafficCars, lookAhead) {
+  _isLaneBlockedAhead(lane, trafficCars, player, lookAhead) {
     if (lane < 0 || lane >= ROAD.LANE_COUNT) return true;
+    // Traffic
     for (const car of trafficCars) {
       if (car.laneIndex !== lane) continue;
-      // Auto je "vpředu" pokud má menší Y (výše na obrazovce = před racerem)
       const dist = this._cy - car.cy;
       if (dist > 0 && dist < lookAhead) return true;
     }
+    // Hráč (přední Y se bere PLAYER.Y_CENTER)
+    if (player && player.laneIndex === lane) {
+      const dist = this._cy - PLAYER.Y_CENTER;
+      if (dist > 0 && dist < lookAhead) return true;
+    }
     return false;
+  }
+
+  /**
+   * Najde nejbližší překážku přímo ve stejném pruhu před racerem.
+   * Vrací { speed, isPlayer } nebo null.
+   * @private
+   */
+  _findObstacleAhead(trafficCars, player, lookAhead) {
+    let best = null;
+    let bestDist = Infinity;
+    for (const car of trafficCars) {
+      if (car.laneIndex !== this.laneIndex) continue;
+      const dist = this._cy - car.cy;
+      if (dist > 0 && dist < lookAhead && dist < bestDist) {
+        bestDist = dist;
+        best = { speed: car.speed, isPlayer: false };
+      }
+    }
+    if (player && player.laneIndex === this.laneIndex) {
+      const dist = this._cy - PLAYER.Y_CENTER;
+      if (dist > 0 && dist < lookAhead && dist < bestDist) {
+        bestDist = dist;
+        best = { speed: 0, isPlayer: true };
+      }
+    }
+    return best;
   }
 
   /** @private */

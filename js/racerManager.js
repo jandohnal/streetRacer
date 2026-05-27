@@ -34,12 +34,12 @@ class RacerManager {
   }
 
   /** @private */
-  _spawnRacer() {
+  _spawnRacer(roadSpeed) {
     // Vyber náhodný pruh
     const laneIndex = Math.floor(Math.random() * ROAD.LANE_COUNT);
     // Spawne se těsně pod dolním okrajem obrazovky
     const startY = CANVAS.HEIGHT + 40;
-    const racer  = new RacerCar(this._svg, laneIndex, startY);
+    const racer  = new RacerCar(this._svg, laneIndex, startY, roadSpeed);
     this._racers.push(racer);
   }
 
@@ -49,13 +49,14 @@ class RacerManager {
    * @param {number}       dt
    * @param {number}       roadSpeed    - Aktuální rychlost silnice (px/s).
    * @param {TrafficCar[]} trafficCars  - Pro logiku vyhýbání.
+   * @param {PlayerCar}    [player]     - Hráč (pro vyhýbání a kolize).
    */
-  update(dt, roadSpeed, trafficCars) {
+  update(dt, roadSpeed, trafficCars, player) {
     const playerKmh = roadSpeed * PHYSICS.PX_PER_S_TO_KMH;
 
     // Update existujících racerů
     for (const r of this._racers) {
-      r.update(dt, roadSpeed, trafficCars);
+      r.update(dt, roadSpeed, trafficCars, player);
     }
 
     // Odstranění neaktivních
@@ -68,7 +69,7 @@ class RacerManager {
       this._spawnTimer -= dt;
       if (this._spawnTimer <= 0) {
         this._spawnTimer = this._nextInterval();
-        this._spawnRacer();
+        this._spawnRacer(roadSpeed);
       }
     }
   }

@@ -94,7 +94,7 @@ class PlayerCar {
       // Sprite je 1024×1024 s autem uprostřed — renderujeme větší plochu
       // aby auto vizuálně odpovídalo ostatním vozidlům.
       // Hitbox zůstává PLAYER.WIDTH × PLAYER.HEIGHT (nezměněn).
-      const SPRITE_SCALE = 3.5;
+      const SPRITE_SCALE = 1.75;
       const sw = PLAYER.WIDTH  * SPRITE_SCALE;
       const sh = PLAYER.HEIGHT * SPRITE_SCALE;
       const img = this._createElement('image');

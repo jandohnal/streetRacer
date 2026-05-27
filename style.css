@@ -221,19 +221,18 @@ html, body {
 }
 
 /* ============================================================
-   Mobile Controls — D-pad: ◄  [▲/▼]  ►
+   Mobile Controls — ▲▼ vlevo, vertikálně uprostřed
    ============================================================ */
 #controls {
   position: absolute;
-  bottom: 0;
   left: 0;
-  width: 100%;
+  top: 50%;
+  transform: translateY(-50%);
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: 10px 16px 18px;
+  padding: 10px 10px 10px 8px;
   z-index: 15;
-  pointer-events: none; /* aktivuje se jen na touch zařízeních */
+  pointer-events: none;
 }
 
 /* Na zařízeních bez hover (dotykové) zobrazíme tlačítka */
@@ -248,7 +247,7 @@ html, body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
 }
 
 .control-btn {

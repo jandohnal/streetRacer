@@ -186,6 +186,7 @@ class Game {
     this._svg.appendChild(this._playerCar.svgGroup);
 
     this._registerMobileControls();
+    this._registerSwipeControls();
 
     // Zvukový engine — načítání na pozadí (neblokuje start obrazovku)
     this._audioEngine = new AudioEngine();
@@ -233,16 +234,13 @@ class Game {
   }
 
   /**
-   * Registruje touch/mouse eventy na mobilní tlačítka.
-   * Každé tlačítko mapuje na virtuální klávesu v InputManageru.
+   * Registruje touch/mouse eventy na mobilní tlačítka (jen ▲▼).
    * @private
    */
   _registerMobileControls() {
     const bindings = [
-      { id: 'btn-left',  key: 'ArrowLeft'  },
-      { id: 'btn-right', key: 'ArrowRight' },
-      { id: 'btn-up',    key: 'ArrowUp'    },
-      { id: 'btn-down',  key: 'ArrowDown'  },
+      { id: 'btn-up',   key: 'ArrowUp'   },
+      { id: 'btn-down', key: 'ArrowDown' },
     ];
 
     for (const { id, key } of bindings) {
@@ -261,6 +259,42 @@ class Game {
       btn.addEventListener('mouseup',    onRelease);
       btn.addEventListener('mouseleave', onRelease);
     }
+  }
+
+  /**
+   * Registruje swipe gesta na SVG canvasu pro přejezd pruhu (L/R).
+   * Swipe se detekuje při touchend: horizontální delta > threshold
+   * a větší než vertikální delta (aby se swipe nepletl s akcelerací).
+   * Výsledkem je jednorázový press+release ArrowLeft/Right.
+   * @private
+   */
+  _registerSwipeControls() {
+    const SWIPE_THRESHOLD = 25; // px — minimální horizontální delta
+    let startX = 0;
+    let startY = 0;
+
+    this._svg.addEventListener('touchstart', (e) => {
+      // Ignoruj dotyky na tlačítkách (controls panel)
+      if (e.target.closest && e.target.closest('#controls')) return;
+      const t = e.changedTouches[0];
+      startX = t.clientX;
+      startY = t.clientY;
+    }, { passive: true });
+
+    this._svg.addEventListener('touchend', (e) => {
+      if (this._state !== GameState.RUNNING) return;
+      const t = e.changedTouches[0];
+      const dx = t.clientX - startX;
+      const dy = t.clientY - startY;
+
+      if (Math.abs(dx) < SWIPE_THRESHOLD) return;
+      if (Math.abs(dx) <= Math.abs(dy)) return; // spíše vertikální gesto
+
+      const key = dx > 0 ? 'ArrowRight' : 'ArrowLeft';
+      this._inputManager.press(key);
+      // Okamžité uvolnění — edge trigger v playerCar zpracuje jako jedno přeskočení pruhu
+      requestAnimationFrame(() => this._inputManager.release(key));
+    }, { passive: true });
   }
 
   // ─── Stavový stroj ───────────────────────────────────────────────────────────

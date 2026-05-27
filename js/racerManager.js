@@ -34,12 +34,11 @@ class RacerManager {
   }
 
   /** @private */
-  _spawnRacer(roadSpeed) {
-    // Vyber náhodný pruh
+  _spawnRacer() {
     const laneIndex = Math.floor(Math.random() * ROAD.LANE_COUNT);
-    // Spawne se těsně pod dolním okrajem obrazovky
-    const startY = CANVAS.HEIGHT + 40;
-    const racer  = new RacerCar(this._svg, laneIndex, startY, roadSpeed);
+    // Spawne se těsně nad horním okrajem obrazovky (jako traffic).
+    const startY = -65;
+    const racer  = new RacerCar(this._svg, laneIndex, startY);
     this._racers.push(racer);
   }
 
@@ -69,7 +68,7 @@ class RacerManager {
       this._spawnTimer -= dt;
       if (this._spawnTimer <= 0) {
         this._spawnTimer = this._nextInterval();
-        this._spawnRacer(roadSpeed);
+        this._spawnRacer();
       }
     }
   }

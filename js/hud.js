@@ -25,6 +25,18 @@ class Hud {
     this._elResultDistance = document.getElementById('result-distance');
     this._elResultCoins    = document.getElementById('result-coins');
 
+    // Name entry (leaderboard)
+    this._nameEntry       = document.getElementById('name-entry');
+    this._inputName       = document.getElementById('input-name');
+    this._btnSubmitScore  = document.getElementById('btn-submit-score');
+    this._scoreSaveStatus = document.getElementById('score-save-status');
+    this._btnLeaderboard  = document.getElementById('btn-leaderboard');
+
+    // Leaderboard overlay
+    this._lbOverlay   = document.getElementById('leaderboard-overlay');
+    this._lbList      = document.getElementById('leaderboard-list');
+    this._btnLbClose  = document.getElementById('btn-leaderboard-close');
+
     // Anti-radar odpočet
     this._elAntiradar      = document.getElementById('hud-antiradar');
     this._elAntiradaTimer  = document.getElementById('hud-antirada-timer');
@@ -55,7 +67,9 @@ class Hud {
     this._overlayTitle.style.textShadow = '0 0 20px rgba(233, 69, 96, 0.6)';
     this._overlaySubtitle.textContent = 'Vyhýbej se autům a sbírej mince!';
     this._overlayStats.classList.add('hidden');
+    this._nameEntry.classList.add('hidden');
     this._btnStart.textContent = 'HRÁT';
+    this._btnLeaderboard.classList.add('hidden');
     this._btnClose.classList.add('hidden');
     this._overlay.classList.remove('hidden');
   }
@@ -90,7 +104,83 @@ class Hud {
     this._overlayStats.classList.remove('hidden');
     this._btnStart.textContent = 'HRÁT ZNOVU';
     this._btnClose.classList.remove('hidden');
+    this._btnLeaderboard.classList.remove('hidden');
+
+    // Zobraz name entry pro uložení skóre
+    this._nameEntry.classList.remove('hidden');
+    this._inputName.value      = localStorage.getItem('playerName') || '';
+    this._scoreSaveStatus.textContent = '';
+    this._scoreSaveStatus.className   = 'score-save-status';
+
     this._overlay.classList.remove('hidden');
+  }
+
+  /**
+   * Zaregistruje handler pro odeslání skóre.
+   * @param {Function} callback fn(name)
+   */
+  onSubmitScore(callback) {
+    this._btnSubmitScore.addEventListener('click', () => {
+      const name = this._inputName.value.trim() || 'Hráč';
+      localStorage.setItem('playerName', name);
+      callback(name);
+    });
+    this._inputName.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') this._btnSubmitScore.click();
+    });
+  }
+
+  /**
+   * Zobrazí stav uložení skóre.
+   * @param {'loading'|'ok'|'err'} state
+   */
+  setScoreSaveStatus(state) {
+    const msgs = { loading: 'Ukládám...', ok: 'Skóre uloženo!', err: 'Chyba při ukládání.' };
+    this._scoreSaveStatus.textContent = msgs[state] || '';
+    this._scoreSaveStatus.className   = 'score-save-status ' + (state === 'loading' ? '' : state);
+    if (state !== 'loading') {
+      this._btnSubmitScore.disabled = true;
+    }
+  }
+
+  /**
+   * Zaregistruje handler pro tlačítko žebříček.
+   * @param {Function} callback
+   */
+  onLeaderboardClick(callback) {
+    this._btnLeaderboard.addEventListener('click', callback);
+    this._btnLbClose.addEventListener('click', () => this._lbOverlay.classList.add('hidden'));
+  }
+
+  /**
+   * Zobrazí leaderboard overlay s daty.
+   * @param {Array<{name:string, score:number}>} entries
+   */
+  showLeaderboard(entries) {
+    this._lbList.innerHTML = '';
+    if (entries.length === 0) {
+      const li = document.createElement('li');
+      li.className   = 'lb-loading';
+      li.textContent = 'Žádné výsledky.';
+      this._lbList.appendChild(li);
+    } else {
+      entries.forEach((e, i) => {
+        const li = document.createElement('li');
+        const rank = i + 1;
+        li.innerHTML =
+          `<span class="lb-rank lb-rank-${rank <= 3 ? rank : ''}">${rank}.</span>` +
+          `<span class="lb-name">${this._escape(e.name)}</span>` +
+          `<span class="lb-score">${e.score}</span>`;
+        this._lbList.appendChild(li);
+      });
+    }
+    this._lbOverlay.classList.remove('hidden');
+  }
+
+  /** @private */
+  _escape(str) {
+    return String(str).replace(/[&<>"']/g, c =>
+      ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
   }
 
   /**

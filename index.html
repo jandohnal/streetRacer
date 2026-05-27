@@ -5,6 +5,31 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
   <title>Street Racer</title>
   <link rel="stylesheet" href="style.css" />
+
+  <!-- Firebase CDN (compat — funguje bez npm/bundleru) -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+  <script>
+    // Inicializace Firebase
+    const _fbApp = firebase.initializeApp({
+      apiKey:            "AIzaSyAwRRtODAFz7eP8BQJ6lOsBeLs3hwXz_ew",
+      authDomain:        "street-racer-2570c.firebaseapp.com",
+      projectId:         "street-racer-2570c",
+      storageBucket:     "street-racer-2570c.firebasestorage.app",
+      messagingSenderId: "1010261990180",
+      appId:             "1:1010261990180:web:6d948db4da77be181231b1",
+    });
+    window._fbDb         = firebase.firestore();
+    // Firestore API metody vystavíme globálně pro leaderboard.js
+    window._fbFirestore  = {
+      collection: (db, path)       => db.collection(path),
+      addDoc:     (ref, data)      => ref.add(data),
+      query:      (ref, ...ops)    => ops.reduce((r, op) => op(r), ref),
+      orderBy:    (field, dir)     => ref => ref.orderBy(field, dir),
+      limit:      (n)              => ref => ref.limit(n),
+      getDocs:    (ref)            => ref.get(),
+    };
+  </script>
 </head>
 <body>
 
@@ -48,9 +73,28 @@
           <p>Vzdálenost: <strong id="result-distance">0 m</strong></p>
           <p>Mince: <strong id="result-coins">0</strong></p>
         </div>
+        <!-- Zadání jména pro leaderboard (zobrazí se po game over) -->
+        <div id="name-entry" class="name-entry hidden">
+          <input id="input-name" class="name-input" type="text" maxlength="20"
+                 placeholder="Tvoje jméno" autocomplete="off" spellcheck="false" />
+          <button id="btn-submit-score" class="btn-primary btn-small">ULOŽIT SKÓRE</button>
+          <p id="score-save-status" class="score-save-status"></p>
+        </div>
         <p id="overlay-subtitle">Vyhýbej se autům a sbírej mince!</p>
         <button id="btn-start" class="btn-primary">HRÁT</button>
+        <button id="btn-leaderboard" class="btn-secondary hidden">ŽEBŘÍČEK</button>
         <button id="btn-close" class="btn-secondary hidden">ZPĚT NA ÚVOD</button>
+      </div>
+    </div>
+
+    <!-- Leaderboard overlay -->
+    <div id="leaderboard-overlay" class="overlay hidden">
+      <div class="overlay-panel leaderboard-panel">
+        <h1 id="leaderboard-title">ŽEBŘÍČEK</h1>
+        <ol id="leaderboard-list" class="leaderboard-list">
+          <li class="lb-loading">Načítám...</li>
+        </ol>
+        <button id="btn-leaderboard-close" class="btn-secondary">ZPĚT</button>
       </div>
     </div>
 
@@ -82,6 +126,7 @@
   <script src="js/racerManager.js"></script>
   <script src="js/collisionSystem.js"></script>
   <script src="js/scoreSystem.js"></script>
+  <script src="js/leaderboard.js"></script>
   <script src="js/hud.js"></script>
   <script src="js/audioBuffers.js"></script>
   <script src="js/audioEngine.js"></script>

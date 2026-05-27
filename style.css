@@ -377,3 +377,124 @@ html, body {
 .btn-mute.muted    .mute-on  { display: none;   }
 .btn-mute:not(.muted) .mute-off { display: none;   }
 .btn-mute:not(.muted) .mute-on  { display: inline; }
+
+/* ============================================================
+   Name entry (po game over)
+   ============================================================ */
+.name-entry {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.name-input {
+  width: 100%;
+  background: rgba(255,255,255,0.08);
+  border: 1.5px solid #555;
+  border-radius: 8px;
+  color: #fff;
+  font-size: 15px;
+  font-weight: 600;
+  padding: 9px 12px;
+  text-align: center;
+  outline: none;
+  letter-spacing: 0.04em;
+  transition: border-color 0.15s;
+}
+
+.name-input:focus {
+  border-color: #e94560;
+}
+
+.name-input::placeholder {
+  color: #666;
+  font-weight: 400;
+}
+
+.btn-small {
+  padding: 9px 24px;
+  font-size: 13px;
+}
+
+.score-save-status {
+  font-size: 12px;
+  color: #aaa;
+  min-height: 16px;
+}
+
+.score-save-status.ok  { color: #4caf50; }
+.score-save-status.err { color: #e94560; }
+
+/* ============================================================
+   Leaderboard overlay
+   ============================================================ */
+.leaderboard-panel {
+  max-height: 90svh;
+  overflow-y: auto;
+}
+
+#leaderboard-title {
+  font-size: 22px;
+  font-weight: 900;
+  color: #FFD700;
+  letter-spacing: 0.12em;
+  text-shadow: 0 0 16px rgba(255, 215, 0, 0.5);
+}
+
+.leaderboard-list {
+  width: 100%;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.leaderboard-list li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255,255,255,0.05);
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 13px;
+  color: #ccc;
+}
+
+.lb-rank {
+  font-weight: 900;
+  font-size: 14px;
+  min-width: 22px;
+  text-align: right;
+  color: #888;
+}
+
+.lb-rank-1 { color: #FFD700; }
+.lb-rank-2 { color: #C0C0C0; }
+.lb-rank-3 { color: #cd7f32; }
+
+.lb-name {
+  flex: 1;
+  font-weight: 700;
+  color: #fff;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.lb-score {
+  font-weight: 900;
+  color: #FFD700;
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+.lb-loading {
+  text-align: center;
+  color: #666;
+  font-style: italic;
+  padding: 16px;
+}

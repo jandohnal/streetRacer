@@ -2,16 +2,377 @@
 
 /**
  * @file racerCar.js
- * Závodní soupeř — auto které začne závodit s hráčem.
+ * Závodní soupeř — auto které se zjeví shora jako traffic, v půlce obrazovky
+ * zrychlí a začne závodit s hráčem.
  *
- * Chování:
- *  - Spawne se dole na obrazovce (blízko hráče) v náhodném pruhu.
- *  - Čeká dokud hráč nejede nad 130 km/h, pak začne zrychlovat.
- *  - Cílová rychlost: 220–250 km/h (vlastní rychlost = absolutní px/s).
- *  - Plynule přejíždí pruhy, vyhýbá se pomalým autům vpředu.
- *  - Vizuál: výrazná barva, sportovní tvar, odlišný od běžného trafficu.
- *  - Deaktivuje se když ujede příliš daleko před hráče (>CANVAS.HEIGHT*1.5 nad).
+ * Fáze:
+ *  CRUISING — jede pomaleji než hráč (jako traffic), pohybuje se dolů.
+ *             Spawní se nahoře mimo obrazovku.
+ *  RACING   — jakmile dosáhne dolní poloviny obrazovky (cy > CANVAS.HEIGHT * 0.5),
+ *             zrychlí na 220–250 km/h, přejíždí pruhy, vyhýbá se překážkám.
+ *
+ * Pravidla:
+ *  - Nenarazí do traffic aut ani hráče (brzdí nebo uhne).
+ *  - Deaktivuje se když odjede příliš daleko nahoru (ujel hráči).
+ *  - Deaktivuje se když odjede příliš daleko dolů (hráč ujel).
  */
+
+const RACER_COLORS = ['#ff3300', '#ff00cc', '#00ccff', '#aaff00', '#ff9900'];
+
+class RacerCar {
+  /**
+   * @param {SVGElement} svg       - Kořenový SVG element.
+   * @param {number}     laneIndex - Počáteční pruh (0–5).
+   * @param {number}     startY    - Počáteční Y (nahoře mimo obrazovku, záporné).
+   */
+  constructor(svg, laneIndex, startY) {
+    /** @private */
+    this._svg = svg;
+
+    /** Aktuální index pruhu */
+    this.laneIndex = laneIndex;
+
+    /** @private */
+    this._cx = LANE_CENTERS[laneIndex];
+    /** @private */
+    this._cy = startY;
+
+    // Vizuální rozměry (stejné jako CAR)
+    this._w = 38;
+    this._h = 65;
+
+    /** @private — vlastní rychlost (px/s); na začátku jako pomalý traffic */
+    this._speed = 0; // nastaví se v update() hned první frame
+
+    /** @private — fáze: 'CRUISING' | 'RACING' */
+    this._phase = 'CRUISING';
+
+    /** @private — cooldown pro přejezd pruhu (s) */
+    this._laneChangeCooldown = 0;
+
+    // Lane-change animace
+    this._lcActive = false;
+    this._lcFromX  = 0;
+    this._lcToX    = 0;
+    this._lcTimer  = 0;
+    this._lcTarget = laneIndex;
+
+    /** Aktivní příznak */
+    this.active = true;
+
+    /** @private */
+    this._group      = null;
+    this._blinkerL   = null;
+    this._blinkerR   = null;
+    this._blinkTimer = 0;
+    this._blinkOn    = false;
+    this._blinkDir   = 0;
+
+    this._color = RACER_COLORS[Math.floor(Math.random() * RACER_COLORS.length)];
+    this._createElements();
+  }
+
+  // ─── SVG ─────────────────────────────────────────────────────────────────────
+
+  /** @private */
+  _createElements() {
+    const ns = 'http://www.w3.org/2000/svg';
+    const el = (tag) => document.createElementNS(ns, tag);
+    const rect = (x, y, w, h, fill, rx = 0) => {
+      const r = el('rect');
+      r.setAttribute('x', x); r.setAttribute('y', y);
+      r.setAttribute('width', w); r.setAttribute('height', h);
+      r.setAttribute('fill', fill);
+      if (rx) r.setAttribute('rx', rx);
+      return r;
+    };
+
+    const g  = el('g');
+    const hw = this._w / 2;
+    const hh = this._h / 2;
+    const dark = this._darken(this._color, 0.65);
+
+    // Karoserie
+    g.appendChild(rect(-hw, -hh, this._w, this._h, this._color, 4));
+
+    // Střecha — sportovní (nižší, užší)
+    const rw = this._w * 0.58;
+    const rh = this._h * 0.32;
+    g.appendChild(rect(-rw/2, -hh + this._h * 0.24, rw, rh, dark, 3));
+
+    // Přední světla (světle žlutá)
+    g.appendChild(rect(-hw + 3,  -hh + 3, 7, 4, '#ffffaa', 1));
+    g.appendChild(rect(hw - 10,  -hh + 3, 7, 4, '#ffffaa', 1));
+
+    // Zadní světla — reference pro blinkr
+    this._blinkerL = rect(-hw + 3,  hh - 7, 7, 4, '#ff2200', 1);
+    this._blinkerR = rect(hw - 10,  hh - 7, 7, 4, '#ff2200', 1);
+    g.appendChild(this._blinkerL);
+    g.appendChild(this._blinkerR);
+
+    // Sportovní pruhy na kapotě
+    g.appendChild(rect(-3, -hh + 6, 6, this._h * 0.35, this._darken(this._color, 0.5), 1));
+
+    // Číslo "R" — označení racera
+    const txt = el('text');
+    txt.setAttribute('x', 0); txt.setAttribute('y', 4);
+    txt.setAttribute('text-anchor', 'middle');
+    txt.setAttribute('font-size', '11');
+    txt.setAttribute('font-weight', 'bold');
+    txt.setAttribute('font-family', 'Arial, sans-serif');
+    txt.setAttribute('fill', dark);
+    txt.textContent = 'R';
+    g.appendChild(txt);
+
+    this._group = g;
+    this._svg.appendChild(g);
+    this._applyTransform();
+  }
+
+  /** @private */
+  _darken(hex, f) {
+    const r = parseInt(hex.slice(1,3),16);
+    const g = parseInt(hex.slice(3,5),16);
+    const b = parseInt(hex.slice(5,7),16);
+    const d = v => Math.max(0,Math.round(v*f)).toString(16).padStart(2,'0');
+    return `#${d(r)}${d(g)}${d(b)}`;
+  }
+
+  /** @private */
+  _applyTransform() {
+    this._group.setAttribute('transform', `translate(${this._cx}, ${this._cy})`);
+  }
+
+  // ─── Logika ──────────────────────────────────────────────────────────────────
+
+  /**
+   * Hlavní update — volá se každý frame.
+   * @param {number}       dt
+   * @param {number}       roadSpeed    - Aktuální rychlost silnice (px/s).
+   * @param {TrafficCar[]} trafficCars  - Všechna dopravní auta (pro vyhýbání).
+   * @param {PlayerCar}    [player]     - Hráč (pro vyhýbání).
+   */
+  update(dt, roadSpeed, trafficCars, player) {
+    // Přechod fáze: jakmile racer sjede do dolní poloviny obrazovky → RACING.
+    if (this._phase === 'CRUISING' && this._cy > CANVAS.HEIGHT * 0.5) {
+      this._phase = 'RACING';
+      // Cílová závodní rychlost — výrazně nad hráče.
+      const targetKmh = 220 + Math.random() * 30;
+      const targetPx  = targetKmh / PHYSICS.PX_PER_S_TO_KMH;
+      this._targetSpeed = Math.max(targetPx, roadSpeed + 50 / PHYSICS.PX_PER_S_TO_KMH);
+    }
+
+    // Cílová rychlost dle fáze
+    let desiredSpeed;
+    if (this._phase === 'CRUISING') {
+      // Pohybuje se dolů jako pomalé traffic auto.
+      // speedFactor ~0.45 → relativeSpeed = roadSpeed*(1-0.45) > 0 → cy roste (dolů).
+      desiredSpeed = roadSpeed * 0.45;
+    } else {
+      // RACING: cílová rychlost výrazně nad roadSpeed → relativeSpeed < 0 → cy klesá (nahoru).
+      desiredSpeed = this._targetSpeed;
+    }
+
+    // Brzdění před překážkou (traffic vpředu nebo hráč ve stejném pruhu).
+    // "Vpředu" = nižší Y (výše na obrazovce) v RACING, nebo vyšší Y (níže) v CRUISING.
+    const BRAKE_DIST = 90;
+    const obstacle = this._findObstacleAhead(trafficCars, player, BRAKE_DIST);
+    if (obstacle) {
+      const obsSpeed = obstacle.isPlayer ? roadSpeed : obstacle.speed;
+      desiredSpeed = Math.min(desiredSpeed, obsSpeed);
+    }
+
+    // Plynulá akcelerace/decelerace.
+    const ACCEL = 80;
+    const DECEL = 200;
+    if (this._speed < desiredSpeed) {
+      this._speed = Math.min(desiredSpeed, this._speed + ACCEL * dt);
+    } else if (this._speed > desiredSpeed) {
+      this._speed = Math.max(desiredSpeed, this._speed - DECEL * dt);
+    }
+
+    // Pohyb: relativeSpeed < 0 → auto jde nahoru (rychlejší než hráč).
+    //        relativeSpeed > 0 → auto jde dolů (pomalejší než hráč, jako traffic).
+    const relativeSpeed = roadSpeed - this._speed;
+    this._cy += relativeSpeed * dt;
+
+    // Lane-change: jen v RACING fázi.
+    if (this._phase === 'RACING') {
+      this._laneChangeCooldown = Math.max(0, this._laneChangeCooldown - dt);
+      if (!this._lcActive && this._laneChangeCooldown <= 0) {
+        this._considerLaneChange(trafficCars, player);
+      }
+    }
+
+    // Animace přejezdu pruhu.
+    if (this._lcActive) {
+      this._lcTimer += dt;
+      const MOVE_DUR = 0.35;
+      const t = Math.min(this._lcTimer / MOVE_DUR, 1);
+      const ease = t < 0.5 ? 2*t*t : -1+(4-2*t)*t;
+      this._cx = this._lcFromX + (this._lcToX - this._lcFromX) * ease;
+      if (t >= 1) {
+        this._cx       = this._lcToX;
+        this.laneIndex = this._lcTarget;
+        this._lcActive = false;
+        this._lcTimer  = 0;
+        this._resetBlinker();
+      }
+      this._updateBlinker(dt);
+    }
+
+    this._applyTransform();
+
+    // Deaktivace — ujel příliš daleko před hráče (nahoře).
+    if (this._cy < -this._h) {
+      this.active = false;
+    }
+    // Deaktivace — zůstal příliš daleko za hráčem (dole).
+    if (this._cy > CANVAS.HEIGHT + 200) {
+      this.active = false;
+    }
+  }
+
+  /**
+   * Rozhodne zda a kam přejet pruh — vyhýbá se překážkám vpředu (výše na obrazovce).
+   * @private
+   */
+  _considerLaneChange(trafficCars, player) {
+    const LOOK_AHEAD   = 180;
+    const blockLeft    = this._isLaneBlockedAhead(this.laneIndex - 1, trafficCars, player, LOOK_AHEAD);
+    const blockCurrent = this._isLaneBlockedAhead(this.laneIndex,     trafficCars, player, LOOK_AHEAD);
+    const blockRight   = this._isLaneBlockedAhead(this.laneIndex + 1, trafficCars, player, LOOK_AHEAD);
+
+    let targetLane = -1;
+
+    if (blockCurrent) {
+      const tryLeft  = this.laneIndex - 1;
+      const tryRight = this.laneIndex + 1;
+      if (!blockLeft  && tryLeft  >= 0)                   targetLane = tryLeft;
+      else if (!blockRight && tryRight < ROAD.LANE_COUNT) targetLane = tryRight;
+    } else {
+      // Občasný náhodný přejezd.
+      if (Math.random() < 0.015) {
+        const dir = Math.random() < 0.5 ? -1 : 1;
+        const t   = this.laneIndex + dir;
+        if (t >= 0 && t < ROAD.LANE_COUNT && !this._isLaneBlockedAhead(t, trafficCars, player, LOOK_AHEAD)) {
+          targetLane = t;
+        }
+      }
+    }
+
+    if (targetLane !== -1) {
+      this._startLaneChange(targetLane);
+    }
+  }
+
+  /**
+   * Zjistí zda je v pruhu překážka výše na obrazovce (menší Y = před racerem v RACING).
+   * @private
+   */
+  _isLaneBlockedAhead(lane, trafficCars, player, lookAhead) {
+    if (lane < 0 || lane >= ROAD.LANE_COUNT) return true;
+    for (const car of trafficCars) {
+      if (car.laneIndex !== lane) continue;
+      const dist = this._cy - car.cy; // kladné = car je výše (před racerem)
+      if (dist > 0 && dist < lookAhead) return true;
+    }
+    if (player && player.laneIndex === lane) {
+      const dist = this._cy - PLAYER.Y_CENTER;
+      if (dist > 0 && dist < lookAhead) return true;
+    }
+    return false;
+  }
+
+  /**
+   * Najde nejbližší překážku přímo ve stejném pruhu před racerem.
+   * @private
+   */
+  _findObstacleAhead(trafficCars, player, lookAhead) {
+    let best = null;
+    let bestDist = Infinity;
+    for (const car of trafficCars) {
+      if (car.laneIndex !== this.laneIndex) continue;
+      const dist = this._cy - car.cy;
+      if (dist > 0 && dist < lookAhead && dist < bestDist) {
+        bestDist = dist;
+        best = { speed: car.speed, isPlayer: false };
+      }
+    }
+    if (player && player.laneIndex === this.laneIndex) {
+      const dist = this._cy - PLAYER.Y_CENTER;
+      if (dist > 0 && dist < lookAhead && dist < bestDist) {
+        bestDist = dist;
+        best = { speed: 0, isPlayer: true };
+      }
+    }
+    return best;
+  }
+
+  /** @private */
+  _startLaneChange(targetLane) {
+    this._lcActive  = true;
+    this._lcFromX   = this._cx;
+    this._lcToX     = LANE_CENTERS[targetLane];
+    this._lcTarget  = targetLane;
+    this._lcTimer   = 0;
+    this._blinkDir  = targetLane > this.laneIndex ? 1 : -1;
+    this._blinkOn   = true;
+    this._blinkTimer = 0;
+    this._laneChangeCooldown = 1.2 + Math.random() * 0.8;
+  }
+
+  /** @private */
+  _updateBlinker(dt) {
+    const INTERVAL = 0.20;
+    this._blinkTimer += dt;
+    if (this._blinkTimer >= INTERVAL) {
+      this._blinkTimer -= INTERVAL;
+      this._blinkOn = !this._blinkOn;
+    }
+    const blink  = this._blinkOn ? '#ffaa00' : '#ff2200';
+    const steady = '#ff2200';
+    if (this._blinkDir < 0) {
+      this._blinkerL.setAttribute('fill', blink);
+      this._blinkerR.setAttribute('fill', steady);
+    } else {
+      this._blinkerL.setAttribute('fill', steady);
+      this._blinkerR.setAttribute('fill', blink);
+    }
+  }
+
+  /** @private */
+  _resetBlinker() {
+    this._blinkerL.setAttribute('fill', '#ff2200');
+    this._blinkerR.setAttribute('fill', '#ff2200');
+    this._blinkOn  = false;
+    this._blinkDir = 0;
+  }
+
+  // ─── Veřejné gettery ─────────────────────────────────────────────────────────
+
+  get cy()     { return this._cy; }
+  get height() { return this._h; }
+  get speed()  { return this._speed; }
+
+  /** Vrátí AABB hitbox (pro kolizní detekci s hráčem). */
+  getHitbox() {
+    return {
+      x:      this._cx - this._w / 2,
+      y:      this._cy - this._h / 2,
+      width:  this._w,
+      height: this._h,
+    };
+  }
+
+  /** Odstraní SVG skupinu. */
+  remove() {
+    if (this._group && this._group.parentNode) {
+      this._group.parentNode.removeChild(this._group);
+    }
+  }
+}
+
 
 const RACER_COLORS = ['#ff3300', '#ff00cc', '#00ccff', '#aaff00', '#ff9900'];
 

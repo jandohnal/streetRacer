@@ -30,15 +30,13 @@ class RacerManager {
 
   /** @private */
   _nextInterval() {
-    return 8 + Math.random() * 7; // 8–15 s
+    return 4 + Math.random() * 3.5; // 4–7.5 s
   }
 
   /** @private */
-  _spawnRacer() {
+  _spawnRacer(roadSpeed, startY = -65) {
     const laneIndex = Math.floor(Math.random() * ROAD.LANE_COUNT);
-    // Spawne se těsně nad horním okrajem obrazovky (jako traffic).
-    const startY = -65;
-    const racer  = new RacerCar(this._svg, laneIndex, startY);
+    const racer  = new RacerCar(this._svg, laneIndex, startY, roadSpeed);
     this._racers.push(racer);
   }
 
@@ -49,13 +47,14 @@ class RacerManager {
    * @param {number}       roadSpeed    - Aktuální rychlost silnice (px/s).
    * @param {TrafficCar[]} trafficCars  - Pro logiku vyhýbání.
    * @param {PlayerCar}    [player]     - Hráč (pro vyhýbání a kolize).
+   * @param {PoliceCar[]}  [policeCars] - Policejní auta (pro vyhýbání radaru).
    */
-  update(dt, roadSpeed, trafficCars, player) {
+  update(dt, roadSpeed, trafficCars, player, policeCars = []) {
     const playerKmh = roadSpeed * PHYSICS.PX_PER_S_TO_KMH;
 
     // Update existujících racerů
     for (const r of this._racers) {
-      r.update(dt, roadSpeed, trafficCars, player);
+      r.update(dt, roadSpeed, trafficCars, player, policeCars);
     }
 
     // Odstranění neaktivních
@@ -63,12 +62,12 @@ class RacerManager {
     for (const r of inactive) r.remove();
     this._racers = this._racers.filter(r => r.active);
 
-    // Spawn logika — jen pokud hráč jede rychle a máme místo
-    if (playerKmh > 130 && this._racers.length < 2) {
+    // Spawn logika — jen pokud hráč jede rychle a máme místo (max 1 racer)
+    if (playerKmh > 130 && this._racers.length < 1) {
       this._spawnTimer -= dt;
       if (this._spawnTimer <= 0) {
         this._spawnTimer = this._nextInterval();
-        this._spawnRacer();
+        this._spawnRacer(roadSpeed);
       }
     }
   }
@@ -81,10 +80,15 @@ class RacerManager {
     return this._racers;
   }
 
-  /** Resetuje správce. */
-  reset() {
+  /**
+   * Resetuje správce a ihned spawnuje úvodního racera před hráčem.
+   * @param {number} roadSpeed - Počáteční rychlost silnice (px/s).
+   */
+  reset(roadSpeed = PHYSICS.SPEED_INITIAL) {
     for (const r of this._racers) r.remove();
     this._racers     = [];
     this._spawnTimer = this._nextInterval();
+    // Úvodní racer uprostřed plochy před hráčem
+    this._spawnRacer(roadSpeed, CANVAS.HEIGHT * 0.5);
   }
 }

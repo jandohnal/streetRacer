@@ -471,7 +471,7 @@ class Game {
     this._bonusManager.update(dt, this._speed);
 
     // 6c. Závodní soupeři
-    this._racerManager.update(dt, this._speed, this._trafficManager.getCars(), this._player);
+    this._racerManager.update(dt, this._speed, this._trafficManager.getCars(), this._player, this._policeManager.getCars());
 
     // 7. Kolize — mince
     const coinResult = CollisionSystem.checkPlayerVsCoins(

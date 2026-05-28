@@ -111,7 +111,7 @@ class TrafficManager {
     }
 
     // Přizpůsobení rychlosti — prevence prolínání vozidel ve stejném pruhu
-    this._applyFollowLogic();
+    this._applyFollowLogic(dt);
 
     // Náhodné přejezdy pruhů
     this._updateLaneChanges(dt);
@@ -200,9 +200,10 @@ class TrafficManager {
    *
    * @private
    */
-  _applyFollowLogic() {
+  _applyFollowLogic(dt) {
+    const OVERTAKE_DELAY = 2.0; // s — jak dlouho čeká CAR před předjetím
+
     for (let lane = 0; lane < ROAD.LANE_COUNT; lane++) {
-      // Auta v tomto pruhu, seřazená dle Y vzestupně (přední = malé Y)
       const inLane = this._cars
         .filter(c => c.laneIndex === lane)
         .sort((a, b) => a.cy - b.cy);
@@ -211,15 +212,51 @@ class TrafficManager {
         const leader   = inLane[i];
         const follower = inLane[i + 1];
 
-        const leaderBottom   = leader.cy   + leader.height   / 2;
-        const followerTop    = follower.cy - follower.height / 2;
-        const gap            = followerTop - leaderBottom;
-        const triggerDist    = leader.height * SPAWN.FOLLOW_GAP_FACTOR;
+        const leaderBottom = leader.cy   + leader.height   / 2;
+        const followerTop  = follower.cy - follower.height / 2;
+        const gap          = followerTop - leaderBottom;
+        const triggerDist  = leader.height * SPAWN.FOLLOW_GAP_FACTOR;
 
         if (gap < triggerDist && follower.speed > leader.speed) {
-          follower.matchSpeed(leader.speed);
+          follower.matchSpeed(leader.speed, dt);
+
+          // CAR se po OVERTAKE_DELAY pokusí předjet
+          if (follower.type === VehicleType.CAR &&
+              follower.blockedTimer >= OVERTAKE_DELAY &&
+              !follower.isChangingLane) {
+            this._tryOvertake(follower);
+          }
+        } else if (gap >= triggerDist * 1.5) {
+          follower.resumeSpeed();
         }
       }
+    }
+  }
+
+  /**
+   * Pokusí se najít volný sousední pruh a zahájit přejezd.
+   * @private
+   * @param {TrafficCar} car
+   */
+  _tryOvertake(car) {
+    const leftOk  = car.laneIndex - 1 >= 0              && this._isLaneClearForChange(car, car.laneIndex - 1);
+    const rightOk = car.laneIndex + 1 < ROAD.LANE_COUNT && this._isLaneClearForChange(car, car.laneIndex + 1);
+
+    let targetLane = -1;
+    if (leftOk && rightOk) {
+      targetLane = Math.random() < 0.5 ? car.laneIndex - 1 : car.laneIndex + 1;
+    } else if (leftOk) {
+      targetLane = car.laneIndex - 1;
+    } else if (rightOk) {
+      targetLane = car.laneIndex + 1;
+    }
+
+    if (targetLane !== -1) {
+      car.startLaneChange(targetLane);
+      car.resetBlockedTimer();
+    } else {
+      // Oba pruhy obsazeny — resetuj timer a zkus znovu za 2s
+      car.resetBlockedTimer();
     }
   }
 

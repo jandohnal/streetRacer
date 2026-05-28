@@ -47,8 +47,17 @@ class TrafficCar {
     /** @private — Y střed (pohybuje se dolů) */
     this._cy = startY;
 
+    /** @private — absolutní strop rychlosti pro tento typ vozidla (px/s) */
+    this._ownMaxSpeed = this._def.maxSpeedKmh / PHYSICS.PX_PER_S_TO_KMH;
+
     /** @private — vlastní rychlost pohybu dolů v px/s */
     this._speed = this._calcSpeed(roadSpeed);
+
+    /** @private — cílová rychlost; vždy směřuje k _ownMaxSpeed pokud není blokováno */
+    this._targetSpeed = this._ownMaxSpeed;
+
+    /** @private — jak dlouho je auto blokováno pomalejším vozidlem (s) */
+    this._blockedTimer = 0;
 
     /** @private — SVG skupina */
     this._group = null;
@@ -88,9 +97,11 @@ class TrafficCar {
 
   /** @private */
   _calcSpeed(roadSpeed) {
-    const { speedMin, speedMax } = this._def;
+    const { speedMin, speedMax, maxSpeedKmh } = this._def;
     const factor = speedMin + Math.random() * (speedMax - speedMin);
-    return roadSpeed * factor;
+    const raw = roadSpeed * factor;
+    const maxPx = maxSpeedKmh / PHYSICS.PX_PER_S_TO_KMH;
+    return Math.min(raw, maxPx);
   }
 
   // ─── Privátní — SVG ─────────────────────────────────────────────────────────
@@ -296,6 +307,15 @@ class TrafficCar {
    * @param {number} roadSpeed
    */
   update(dt, roadSpeed) {
+    // Plynulé přibližování k cílové rychlosti
+    const ACCEL = 30; // px/s² — pomalé přirozené zrychlení
+    const DECEL = 80; // px/s² — rychlejší brzdění
+    if (this._speed < this._targetSpeed) {
+      this._speed = Math.min(this._targetSpeed, this._speed + ACCEL * dt);
+    } else if (this._speed > this._targetSpeed) {
+      this._speed = Math.max(this._targetSpeed, this._speed - DECEL * dt);
+    }
+
     const relativeSpeed = roadSpeed - this._speed;
     this._cy += relativeSpeed * dt;
 
@@ -378,12 +398,30 @@ class TrafficCar {
   get height() { return this._def.height; }
 
   /**
-   * Přizpůsobí vlastní rychlost na rychlost předního vozidla.
+   * Nastaví cílovou rychlost na rychlost předního vozidla (plynulé zpomalení).
    * @param {number} leaderSpeed
+   * @param {number} dt
    */
-  matchSpeed(leaderSpeed) {
-    this._speed = leaderSpeed;
+  matchSpeed(leaderSpeed, dt = 0) {
+    this._targetSpeed = leaderSpeed;
+    if (this.type === VehicleType.CAR) {
+      this._blockedTimer += dt;
+    }
   }
+
+  /**
+   * Obnoví cílovou rychlost zpět na vlastní max (po uvolnění překážky).
+   */
+  resumeSpeed() {
+    this._targetSpeed = this._ownMaxSpeed;
+    this._blockedTimer = 0;
+  }
+
+  /** Vrátí jak dlouho je auto blokováno (s). Relevantní jen pro CAR. */
+  get blockedTimer() { return this._blockedTimer; }
+
+  /** Resetuje čítač blokování (po zahájení přejezdu). */
+  resetBlockedTimer() { this._blockedTimer = 0; }
 
   /** Odstraní SVG skupinu z dokumentu. */
   remove() {

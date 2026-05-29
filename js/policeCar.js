@@ -38,8 +38,14 @@ class PoliceCar {
     /** @private — vlastní rychlost pohybu (px/s) */
     this._speed = this._calcSpeed(roadSpeed);
 
+    /** @private — výchozí rychlost (strop pro obnovu po zpomalení kolizí) */
+    this._baseSpeed = this._speed;
+
     /** @private — akumulovaný čas pro pulzaci (s) */
     this._pulseTime = 0;
+
+    /** @private — boční rychlost z kolizních impulzů (px/s), tlumí se */
+    this._vx = 0;
 
     /** @private — SVG skupina */
     this._group = null;
@@ -206,9 +212,21 @@ class PoliceCar {
    * @param {number} roadSpeed - Aktuální rychlost silnice (px/s).
    */
   update(dt, roadSpeed) {
+    // Obnova rychlosti zpět k výchozí (po zpomalení kvůli kolizi)
+    if (this._speed < this._baseSpeed) {
+      this._speed = Math.min(this._baseSpeed, this._speed + 60 * dt);
+    }
+
     // Pohyb dolů
     const relativeSpeed = roadSpeed - this._speed;
     this._cy += relativeSpeed * dt;
+
+    // Boční impuls z kolizí + plynulý návrat do středu pruhu
+    this._cx += this._vx * dt;
+    this._vx *= Math.exp(-6 * dt);
+    const laneCx = LANE_CENTERS[this.laneIndex];
+    this._cx += (laneCx - this._cx) * Math.min(1, 2.5 * dt);
+
     this._applyTransform();
 
     // Pulzace radaru
@@ -254,8 +272,48 @@ class PoliceCar {
   /** Aktuální Y střed (pro spawn kontrolu). */
   get cy() { return this._cy; }
 
+  /** Aktuální X střed. */
+  get cx() { return this._cx; }
+
+  /** Aktuální rychlost (px/s). */
+  get speed() { return this._speed; }
+
   /** Výška karoserie (pro spawn kontrolu). */
   get height() { return POLICE.HEIGHT; }
+
+  /** @returns {number} hmotnost úměrná ploše (pro kolizní impulzy) */
+  get mass() { return POLICE.WIDTH * POLICE.HEIGHT; }
+
+  /**
+   * Přímo nastaví aktuální rychlost (kolizní přenos hybnosti).
+   * @param {number} v
+   */
+  setSpeed(v) { this._speed = Math.max(0, v); }
+
+  /**
+   * Přidá boční rychlost (kolizní odraz do strany).
+   * @param {number} dvx
+   */
+  applyLateralImpulse(dvx) { this._vx += dvx; }
+
+  /**
+   * Posune vozidlo o daný offset (separace kolizí).
+   * @param {number} dx
+   * @param {number} dy
+   */
+  separate(dx, dy) {
+    this._cx += dx;
+    this._cy += dy;
+    this._applyTransform();
+  }
+
+  /**
+   * Omezí aktuální rychlost shora (separace — nájezd na pomalejší vozidlo).
+   * @param {number} maxSpeed
+   */
+  capSpeed(maxSpeed) {
+    if (this._speed > maxSpeed) this._speed = maxSpeed;
+  }
 
   /** Odstraní SVG skupinu z dokumentu. */
   remove() {

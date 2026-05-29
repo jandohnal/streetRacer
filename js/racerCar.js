@@ -34,6 +34,9 @@ class RacerCar {
     /** @private — cooldown pro přejezd pruhu (s) */
     this._laneChangeCooldown = 0;
 
+    /** @private — boční rychlost z kolizních impulzů (px/s), tlumí se */
+    this._vx = 0;
+
     // Lane-change animace
     this._lcActive = false;
     this._lcFromX  = 0;
@@ -232,6 +235,14 @@ class RacerCar {
       this._updateBlinker(dt);
     }
 
+    // Boční impuls z kolizí + plynulý návrat do středu pruhu (jen mimo přejezd)
+    this._cx += this._vx * dt;
+    this._vx *= Math.exp(-6 * dt);
+    if (!this._lcActive) {
+      const laneCx = LANE_CENTERS[this.laneIndex];
+      this._cx += (laneCx - this._cx) * Math.min(1, 2.5 * dt);
+    }
+
     this._applyTransform();
 
     // Deaktivace jen pokud racer zcela opustí obrazovku (nemělo by nastat díky clampu)
@@ -309,6 +320,8 @@ class RacerCar {
     }
 
     if (player && player.laneIndex === lane) {
+      // Nepřejíždět do pruhu, pokud je hráč v okruhu 2× délky auta
+      if (Math.abs(this._cy - PLAYER.Y_CENTER) < this._h * 2) return true;
       const dist = this._cy - PLAYER.Y_CENTER;
       if (dist > -30 && dist < lookAhead) return true;
     }
@@ -425,8 +438,24 @@ class RacerCar {
   // ─── Veřejné gettery ─────────────────────────────────────────────────────────
 
   get cy()     { return this._cy; }
+  get cx()     { return this._cx; }
   get height() { return this._h; }
   get speed()  { return this._speed; }
+
+  /** @returns {number} hmotnost úměrná ploše (pro kolizní impulzy) */
+  get mass() { return this._w * this._h; }
+
+  /**
+   * Přímo nastaví aktuální rychlost (kolizní přenos hybnosti).
+   * @param {number} v
+   */
+  setSpeed(v) { this._speed = Math.max(0, v); }
+
+  /**
+   * Přidá boční rychlost (kolizní odraz do strany).
+   * @param {number} dvx
+   */
+  applyLateralImpulse(dvx) { this._vx += dvx; }
 
   getHitbox() {
     return {
@@ -435,6 +464,25 @@ class RacerCar {
       width:  this._w,
       height: this._h,
     };
+  }
+
+  /**
+   * Posune racera o daný offset (separace kolizí).
+   * @param {number} dx
+   * @param {number} dy
+   */
+  separate(dx, dy) {
+    this._cx += dx;
+    this._cy += dy;
+    this._applyTransform();
+  }
+
+  /**
+   * Omezí aktuální rychlost shora (separace — nájezd na pomalejší vozidlo).
+   * @param {number} maxSpeed
+   */
+  capSpeed(maxSpeed) {
+    if (this._speed > maxSpeed) this._speed = maxSpeed;
   }
 
   remove() {

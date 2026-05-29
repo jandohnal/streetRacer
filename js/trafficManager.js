@@ -81,18 +81,22 @@ class TrafficManager {
    * @param {number} roadSpeed - Aktuální rychlost silnice.
    */
   _spawnVehicle(roadSpeed) {
-    const type      = this._pickVehicleType();
-    const def       = VEHICLE_DEFS[type];
-    const available = this._getAvailableLanes(def.height);
+    // Spawn více aut najednou do různých pruhů → hustý provoz, plné pruhy.
+    const count = 1 + Math.floor(Math.random() * SPAWN.MAX_PER_SPAWN);
 
-    if (available.length === 0) return;
+    for (let n = 0; n < count; n++) {
+      const type      = this._pickVehicleType();
+      const def       = VEHICLE_DEFS[type];
+      const available = this._getAvailableLanes(def.height);
 
-    const laneIndex = available[Math.floor(Math.random() * available.length)];
-    // Začínáme těsně nad horním okrajem plátna
-    const startY = -(def.height / 2) - 5;
+      if (available.length === 0) break;
 
-    const car = new TrafficCar(this._svg, type, laneIndex, startY, roadSpeed);
-    this._cars.push(car);
+      const laneIndex = available[Math.floor(Math.random() * available.length)];
+      const startY = -(def.height / 2) - 5;
+
+      const car = new TrafficCar(this._svg, type, laneIndex, startY, roadSpeed);
+      this._cars.push(car);
+    }
   }
 
   // ─── Veřejné metody ─────────────────────────────────────────────────────────
@@ -104,17 +108,17 @@ class TrafficManager {
    * @param {number} dt        - Delta time (s).
    * @param {number} roadSpeed - Aktuální rychlost silnice (px/s).
    */
-  update(dt, roadSpeed) {
+  update(dt, roadSpeed, player = null) {
     // Pohyb existujících vozidel
     for (const car of this._cars) {
       car.update(dt, roadSpeed);
     }
 
     // Přizpůsobení rychlosti — prevence prolínání vozidel ve stejném pruhu
-    this._applyFollowLogic(dt);
+    this._applyFollowLogic(dt, player);
 
     // Náhodné přejezdy pruhů
-    this._updateLaneChanges(dt);
+    this._updateLaneChanges(dt, player);
 
     // Odstranění neaktivních
     const inactive = this._cars.filter(c => !c.active);
@@ -140,7 +144,7 @@ class TrafficManager {
    * @private
    * @param {number} dt
    */
-  _updateLaneChanges(dt) {
+  _updateLaneChanges(dt, player = null) {
     // Pravděpodobnost pokusu o přejezd na auto za sekundu
     const CHANCE_PER_SEC = 0.18;
 
@@ -160,7 +164,7 @@ class TrafficManager {
       if (targetLane < 0 || targetLane >= ROAD.LANE_COUNT) continue;
 
       // Zkontroluj, zda cílový pruh není obsazen v blízkém Y rozsahu
-      if (!this._isLaneClearForChange(car, targetLane)) continue;
+      if (!this._isLaneClearForChange(car, targetLane, player)) continue;
 
       car.startLaneChange(targetLane);
     }
@@ -168,18 +172,23 @@ class TrafficManager {
 
   /**
    * Zkontroluje, zda pruh je volný pro přejezd daného auta.
-   * Porovnává Y rozsah auta s ostatními auty v cílovém pruhu.
+   * Bere v potaz ostatní auta i hráče (hráč v okruhu 2× délky auta blokuje přejezd).
    * @private
    * @param {TrafficCar} car
    * @param {number} targetLane
+   * @param {PlayerCar} [player]
    * @returns {boolean}
    */
-  _isLaneClearForChange(car, targetLane) {
+  _isLaneClearForChange(car, targetLane, player = null) {
     const safeGap = car.height * 1.2;
     for (const other of this._cars) {
       if (other === car) continue;
       if (other.laneIndex !== targetLane) continue;
       if (Math.abs(other.cy - car.cy) < safeGap) return false;
+    }
+    // Nesmí najet na hráče — pokud je hráč v cílovém pruhu blíž než 2× délka auta
+    if (player && player.laneIndex === targetLane) {
+      if (Math.abs(PLAYER.Y_CENTER - car.cy) < car.height * 2) return false;
     }
     return true;
   }
@@ -200,7 +209,7 @@ class TrafficManager {
    *
    * @private
    */
-  _applyFollowLogic(dt) {
+  _applyFollowLogic(dt, player = null) {
     const OVERTAKE_DELAY = 2.0; // s — jak dlouho čeká CAR před předjetím
 
     for (let lane = 0; lane < ROAD.LANE_COUNT; lane++) {
@@ -224,7 +233,7 @@ class TrafficManager {
           if (follower.type === VehicleType.CAR &&
               follower.blockedTimer >= OVERTAKE_DELAY &&
               !follower.isChangingLane) {
-            this._tryOvertake(follower);
+            this._tryOvertake(follower, player);
           }
         } else if (gap >= triggerDist * 1.5) {
           follower.resumeSpeed();
@@ -238,9 +247,9 @@ class TrafficManager {
    * @private
    * @param {TrafficCar} car
    */
-  _tryOvertake(car) {
-    const leftOk  = car.laneIndex - 1 >= 0              && this._isLaneClearForChange(car, car.laneIndex - 1);
-    const rightOk = car.laneIndex + 1 < ROAD.LANE_COUNT && this._isLaneClearForChange(car, car.laneIndex + 1);
+  _tryOvertake(car, player = null) {
+    const leftOk  = car.laneIndex - 1 >= 0              && this._isLaneClearForChange(car, car.laneIndex - 1, player);
+    const rightOk = car.laneIndex + 1 < ROAD.LANE_COUNT && this._isLaneClearForChange(car, car.laneIndex + 1, player);
 
     let targetLane = -1;
     if (leftOk && rightOk) {

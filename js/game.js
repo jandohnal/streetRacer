@@ -459,7 +459,7 @@ class Game {
     this._scoreSystem.addDistance(dt, this._speed);
 
     // 4. Dopravní auta
-    this._trafficManager.update(dt, this._speed);
+    this._trafficManager.update(dt, this._speed, this._player);
 
     // 5. Policejní auta
     this._policeManager.update(dt, this._speed);
@@ -472,6 +472,13 @@ class Game {
 
     // 6c. Závodní soupeři
     this._racerManager.update(dt, this._speed, this._trafficManager.getCars(), this._player, this._policeManager.getCars());
+
+    // 6d. Vzájemné kolize všech aut (traffic, police, racer) — zabrání průniku
+    CollisionSystem.resolveVehicleSeparation([
+      ...this._trafficManager.getCars(),
+      ...this._policeManager.getCars(),
+      ...this._racerManager.getRacers(),
+    ]);
 
     // 7. Kolize — mince
     const coinResult = CollisionSystem.checkPlayerVsCoins(

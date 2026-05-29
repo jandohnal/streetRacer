@@ -127,7 +127,7 @@ const VEHICLE_DEFS = Object.freeze({
     speedMin:     0.35,
     speedMax:     0.65,
     maxSpeedKmh:  130,
-    spawnWeight:  5,
+    spawnWeight:  50,
     colors: ['#e74c3c', '#3498db', '#ecf0f1', '#95a5a6', '#f39c12', '#8e44ad'],
     roofColor:    null,   // null = vypočítá se ztmavením těla
   },
@@ -157,7 +157,7 @@ const VEHICLE_DEFS = Object.freeze({
     speedMin:     0.20,
     speedMax:     0.40,
     maxSpeedKmh:  80,
-    spawnWeight:  1,
+    spawnWeight:  10,
     colors: ['#2c3e50', '#27ae60', '#7f8c8d', '#c0392b'],
     roofColor:   null,
   },
@@ -174,15 +174,17 @@ const VEHICLE_SPAWN_POOL = Object.freeze(
 
 const SPAWN = Object.freeze({
   /** Základní interval spawnu v sekundách */
-  INTERVAL_BASE:   1.5,
+  INTERVAL_BASE:   0.6,
   /** Minimální interval spawnu (s) */
-  INTERVAL_MIN:    0.6,
+  INTERVAL_MIN:    0.25,
   /** O kolik se zkrátí interval na každých 100 px/s nad počáteční rychlost */
   INTERVAL_STEP:   0.1,
   /** Pravděpodobnost spawnu mince místo auta (0–1) */
   COIN_CHANCE:     0.18,
   /** Bezpečná Y vzdálenost pro nový spawn (aby se objekty nepřekrývaly) */
-  SAFE_GAP:        20,
+  SAFE_GAP:        12,
+  /** Maximální počet aut spawnutých najednou v jednom cyklu (více pruhů) */
+  MAX_PER_SPAWN:   3,
   /**
    * Násobitel výšky předního auta — pokud je mezera mezi auty menší než
    * (výška předního auta × FOLLOW_GAP_FACTOR), zadní přizpůsobí rychlost.

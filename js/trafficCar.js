@@ -59,6 +59,9 @@ class TrafficCar {
     /** @private — jak dlouho je auto blokováno pomalejším vozidlem (s) */
     this._blockedTimer = 0;
 
+    /** @private — boční rychlost z kolizních impulzů (px/s), tlumí se */
+    this._vx = 0;
+
     /** @private — SVG skupina */
     this._group = null;
 
@@ -346,6 +349,14 @@ class TrafficCar {
       }
     }
 
+    // Boční impuls z kolizí + plynulý návrat do středu pruhu
+    this._cx += this._vx * dt;
+    this._vx *= Math.exp(-6 * dt);
+    if (this._lcState === LaneChangeState.IDLE) {
+      const targetCx = LANE_CENTERS[this.laneIndex];
+      this._cx += (targetCx - this._cx) * Math.min(1, 2.5 * dt);
+    }
+
     this._applyTransform();
 
     if (this._cy - this._def.height / 2 > CANVAS.HEIGHT + 20) {
@@ -392,10 +403,48 @@ class TrafficCar {
   get cy() { return this._cy; }
 
   /** @returns {number} */
+  get cx() { return this._cx; }
+
+  /** @returns {number} */
   get speed() { return this._speed; }
 
   /** @returns {number} */
   get height() { return this._def.height; }
+
+  /** @returns {number} hmotnost úměrná ploše (pro kolizní impulzy) */
+  get mass() { return this._def.width * this._def.height; }
+
+  /**
+   * Přímo nastaví aktuální rychlost (kolizní přenos hybnosti).
+   * @param {number} v
+   */
+  setSpeed(v) { this._speed = Math.max(0, v); }
+
+  /**
+   * Přidá boční rychlost (kolizní odraz do strany).
+   * @param {number} dvx
+   */
+  applyLateralImpulse(dvx) { this._vx += dvx; }
+
+  /**
+   * Posune vozidlo o daný offset (separace kolizí).
+   * @param {number} dx
+   * @param {number} dy
+   */
+  separate(dx, dy) {
+    this._cx += dx;
+    this._cy += dy;
+    this._applyTransform();
+  }
+
+  /**
+   * Omezí aktuální i cílovou rychlost shora (separace — nájezd na pomalejší auto).
+   * @param {number} maxSpeed
+   */
+  capSpeed(maxSpeed) {
+    if (this._speed > maxSpeed) this._speed = maxSpeed;
+    if (this._targetSpeed > maxSpeed) this._targetSpeed = maxSpeed;
+  }
 
   /**
    * Nastaví cílovou rychlost na rychlost předního vozidla (plynulé zpomalení).

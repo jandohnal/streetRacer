@@ -117,6 +117,78 @@ const CollisionSystem = Object.freeze({
     return null;
   },
 
+  /**
+   * Vyřeší vzájemné kolize mezi VŠEMI auty na vozovce (traffic, police, racer).
+   * Zabrání průniku libovolné dvojice vozidel:
+   *  - Nájezd zezadu (menší překryv v ose Y) → zadní auto se posune zpět
+   *    a zpomalí na rychlost předního.
+   *  - Boční překryv (menší překryv v ose X) → auta se rozestoupí do stran.
+   *
+   * Volá se po pohybovém updatu všech vozidel, před kontrolou kolizí hráče.
+   *
+   * @param {Array<TrafficCar|PoliceCar|RacerCar>} vehicles - Všechna AI vozidla.
+   */
+  resolveVehicleSeparation(vehicles) {
+    const RESTITUTION  = 0.25; // koeficient odrazu při nájezdu zezadu (0 = bez odrazu)
+    const SIDE_PUSH    = 140;  // px/s — boční odrazová rychlost při bočním kontaktu
+
+    for (let i = 0; i < vehicles.length; i++) {
+      for (let j = i + 1; j < vehicles.length; j++) {
+        const a = vehicles[i];
+        const b = vehicles[j];
+        const ha = a.getHitbox();
+        const hb = b.getHitbox();
+        if (!CollisionSystem._aabbOverlap(ha, hb)) continue;
+
+        const aCx = ha.x + ha.width  / 2;
+        const bCx = hb.x + hb.width  / 2;
+        const aCy = ha.y + ha.height / 2;
+        const bCy = hb.y + hb.height / 2;
+
+        const overlapX = (ha.width  + hb.width)  / 2 - Math.abs(aCx - bCx);
+        const overlapY = (ha.height + hb.height) / 2 - Math.abs(aCy - bCy);
+        if (overlapX <= 0 || overlapY <= 0) continue;
+
+        const ma = a.mass;
+        const mb = b.mass;
+        const total = ma + mb;
+
+        if (overlapY <= overlapX) {
+          // ── Nájezd zezadu (podélná osa) ──────────────────────────────────
+          const rear  = a.cy > b.cy ? a : b;
+          const front = a.cy > b.cy ? b : a;
+          const mr = rear.mass;
+          const mf = front.mass;
+          const tot = mr + mf;
+
+          // Poziční korekce dle hmotnosti — lehčí auto ustoupí víc
+          rear.separate(0,   overlapY * (mf / tot));
+          front.separate(0, -overlapY * (mr / tot));
+
+          // Přenos hybnosti podél jízdy — zadní (rychlejší) postrčí přední vpřed
+          const u1 = rear.speed;
+          const u2 = front.speed;
+          if (u1 > u2) {
+            const e  = RESTITUTION;
+            const v1 = (mr * u1 + mf * u2 - mf * e * (u1 - u2)) / tot;
+            const v2 = (mr * u1 + mf * u2 + mr * e * (u1 - u2)) / tot;
+            rear.setSpeed(v1);
+            front.setSpeed(v2);
+          }
+        } else {
+          // ── Boční překryv — rozestup + boční odraz ───────────────────────
+          const dirA = aCx < bCx ? -1 : 1; // směr odsunutí auta A
+          a.separate(dirA * overlapX * (mb / total), 0);
+          b.separate(-dirA * overlapX * (ma / total), 0);
+
+          // Boční impuls — vytlačení do strany (lehčí auto odlétne víc)
+          a.applyLateralImpulse(dirA * SIDE_PUSH * (mb / total));
+          b.applyLateralImpulse(-dirA * SIDE_PUSH * (ma / total));
+        }
+      }
+    }
+  },
+
   // ─── Privátní pomocné funkce ─────────────────────────────────────────────────
 
   /**

@@ -45,14 +45,25 @@ class Hud {
   // ─── HUD ─────────────────────────────────────────────────────────────────────
 
   /**
-   * Aktualizuje zobrazené hodnoty v HUD.
-   * @param {number} score        - Celkové skóre.
-   * @param {number} distanceMeters - Vzdálenost v metrech.
-   * @param {number} speedPxPerS  - Rychlost silnice v px/s.
+   * Naformátuje čas na mm:ss.d (desetiny sekundy).
+   * @param {number} seconds
+   * @returns {string}
    */
-  update(score, distanceMeters, speedPxPerS) {
-    this._elScore.textContent    = score;
-    this._elDistance.textContent = `${distanceMeters} m`;
+  _formatTime(seconds) {
+    const m = Math.floor(seconds / 60);
+    const s = seconds - m * 60;
+    return `${m}:${s.toFixed(1).padStart(4, '0')}`;
+  }
+
+  /**
+   * Aktualizuje zobrazené hodnoty v HUD.
+   * @param {number} timeSeconds    - Uplynulý čas závodu (s).
+   * @param {number} distanceMeters - Vzdálenost v metrech.
+   * @param {number} speedPxPerS    - Rychlost silnice v px/s.
+   */
+  update(timeSeconds, distanceMeters, speedPxPerS) {
+    this._elScore.textContent    = this._formatTime(timeSeconds);
+    this._elDistance.textContent = `${distanceMeters} / ${RACE.GOAL_METERS} m`;
     this._elSpeed.textContent    = `${Math.round(speedPxPerS * PHYSICS.PX_PER_S_TO_KMH)} km/h`;
   }
 
@@ -65,7 +76,7 @@ class Hud {
     this._overlayTitle.textContent    = 'STREET RACER';
     this._overlayTitle.style.color    = '#e94560';
     this._overlayTitle.style.textShadow = '0 0 20px rgba(233, 69, 96, 0.6)';
-    this._overlaySubtitle.textContent = 'Vyhýbej se autům a sbírej mince!';
+    this._overlaySubtitle.textContent = `Ujeď ${RACE.GOAL_METERS} m co nejrychleji! Mince ti uberou čas.`;
     this._overlayStats.classList.add('hidden');
     this._nameEntry.classList.add('hidden');
     this._btnStart.textContent = 'HRÁT';
@@ -76,28 +87,35 @@ class Hud {
 
   /**
    * Zobrazí game-over overlay s výsledky.
-   * @param {number}  score
+   * @param {number}  timeSeconds         - Výsledný čas závodu (s).
    * @param {number}  distanceMeters
    * @param {number}  coins
-   * @param {boolean} [busted=false]      - true = BUSTED (policie), false = CRASH
+   * @param {boolean} [busted=false]      - true = BUSTED (policie)
    * @param {number}  [bustedSpeedKmh=0]  - Rychlost při chycení (km/h), jen pro BUSTED
+   * @param {boolean} [finished=false]    - true = dojel cílovou vzdálenost
    */
-  showGameOver(score, distanceMeters, coins, busted = false, bustedSpeedKmh = 0) {
-    this._overlayTitle.textContent = busted ? 'BUSTED!' : 'GAME OVER';
-    this._overlayTitle.style.color = busted ? '#1a8cff' : '#e94560';
-    this._overlayTitle.style.textShadow = busted
-      ? '0 0 20px rgba(26, 140, 255, 0.7)'
-      : '0 0 20px rgba(233, 69, 96, 0.6)';
+  showGameOver(timeSeconds, distanceMeters, coins, busted = false, bustedSpeedKmh = 0, finished = false) {
+    const title = finished ? 'DOJEL JSI!' : (busted ? 'BUSTED!' : 'GAME OVER');
+    const color = finished ? '#27e060' : (busted ? '#1a8cff' : '#e94560');
+    this._overlayTitle.textContent = title;
+    this._overlayTitle.style.color = color;
+    this._overlayTitle.style.textShadow = finished
+      ? '0 0 20px rgba(39, 224, 96, 0.6)'
+      : (busted
+          ? '0 0 20px rgba(26, 140, 255, 0.7)'
+          : '0 0 20px rgba(233, 69, 96, 0.6)');
 
     if (busted) {
       this._overlaySubtitle.innerHTML =
         `Byl jsi chycen policií!<br>` +
         `<span class="busted-speed">${Math.round(bustedSpeedKmh)} km/h</span>`;
+    } else if (finished) {
+      this._overlaySubtitle.textContent = `Dojel jsi ${RACE.GOAL_METERS} m! (mince −${coins * RACE.COIN_TIME_BONUS}s)`;
     } else {
       this._overlaySubtitle.textContent = 'Dobrá jízda! Zkus to znovu.';
     }
 
-    this._elResultScore.textContent    = score;
+    this._elResultScore.textContent    = this._formatTime(timeSeconds);
     this._elResultDistance.textContent = `${distanceMeters} m`;
     this._elResultCoins.textContent    = coins;
 
@@ -167,10 +185,11 @@ class Hud {
       entries.forEach((e, i) => {
         const li = document.createElement('li');
         const rank = i + 1;
+        const value = typeof e.time === 'number' ? this._formatTime(e.time) : (e.score ?? '');
         li.innerHTML =
           `<span class="lb-rank lb-rank-${rank <= 3 ? rank : ''}">${rank}.</span>` +
           `<span class="lb-name">${this._escape(e.name)}</span>` +
-          `<span class="lb-score">${e.score}</span>`;
+          `<span class="lb-score">${value}</span>`;
         this._lbList.appendChild(li);
       });
     }

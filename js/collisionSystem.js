@@ -189,6 +189,64 @@ const CollisionSystem = Object.freeze({
     }
   },
 
+  /**
+   * Vyřeší fyzickou kolizi hráče s ostatními auty (NEukončuje hru).
+   * Hráč má pevné Y (PLAYER.Y_CENTER), takže se separuje druhé auto, a rychlost
+   * hráče se sníží:
+   *  - Nájezd zezadu na pomalejší auto → hráč zpomalí na rychlost toho auta
+   *    (+ lehký odraz) a auto se postrčí dopředu.
+   *  - Boční kontakt → auto se vytlačí do strany + mírné zpomalení hráče.
+   *
+   * @param {PlayerCar} playerCar - Hráčovo auto.
+   * @param {Array<TrafficCar|PoliceCar|RacerCar>} vehicles - Všechna AI auta.
+   * @param {number} speed - Aktuální rychlost hráče (px/s).
+   * @returns {number} Upravená rychlost hráče (px/s).
+   */
+  resolvePlayerVsVehicles(playerCar, vehicles, speed) {
+    const REAR_BOUNCE = 0.92; // lehký odraz při nájezdu zezadu
+    const SIDE_SLOW   = 0.97; // mírné zpomalení při bočním škrtnutí
+    const SIDE_PUSH   = 160;  // px/s — boční odraz auta
+
+    const ph  = playerCar.getHitbox();
+    const pCx = ph.x + ph.width  / 2;
+    const pCy = ph.y + ph.height / 2;
+
+    let newSpeed = speed;
+
+    for (const v of vehicles) {
+      const vh = v.getHitbox();
+      if (!CollisionSystem._aabbOverlap(ph, vh)) continue;
+
+      const vCx = vh.x + vh.width  / 2;
+      const vCy = vh.y + vh.height / 2;
+
+      const overlapX = (ph.width  + vh.width)  / 2 - Math.abs(pCx - vCx);
+      const overlapY = (ph.height + vh.height) / 2 - Math.abs(pCy - vCy);
+      if (overlapX <= 0 || overlapY <= 0) continue;
+
+      if (overlapY <= overlapX) {
+        // Podélná osa — typicky hráč najíždí na pomalejší auto před sebou
+        if (pCy > vCy) {
+          // Auto je před hráčem → postrč ho dopředu, hráč zpomalí na jeho rychlost
+          v.separate(0, -overlapY);
+          newSpeed = Math.min(newSpeed, v.speed * REAR_BOUNCE);
+        } else {
+          // Auto je za hráčem (vzácné) → postrč ho zpět a zpomal na rychlost hráče
+          v.separate(0, overlapY);
+          v.capSpeed(newSpeed);
+        }
+      } else {
+        // Boční kontakt → vytlač auto do strany, hráče mírně zpomal
+        const dir = vCx >= pCx ? 1 : -1;
+        v.separate(dir * overlapX, 0);
+        v.applyLateralImpulse(dir * SIDE_PUSH);
+        newSpeed *= SIDE_SLOW;
+      }
+    }
+
+    return newSpeed;
+  },
+
   // ─── Privátní pomocné funkce ─────────────────────────────────────────────────
 
   /**

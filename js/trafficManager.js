@@ -186,9 +186,11 @@ class TrafficManager {
       if (other.laneIndex !== targetLane) continue;
       if (Math.abs(other.cy - car.cy) < safeGap) return false;
     }
-    // Nesmí najet na hráče — pokud je hráč v cílovém pruhu blíž než 2× délka auta
-    if (player && player.laneIndex === targetLane) {
-      if (Math.abs(PLAYER.Y_CENTER - car.cy) < car.height * 2) return false;
+    // Žádný přejezd, pokud je hráč v okruhu 2× délky auta (radius)
+    if (player) {
+      const dx = LANE_CENTERS[player.laneIndex] - car.cx;
+      const dy = PLAYER.Y_CENTER - car.cy;
+      if (Math.hypot(dx, dy) < car.height * 2) return false;
     }
     return true;
   }

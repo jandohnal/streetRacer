@@ -210,6 +210,15 @@ const SCORE = Object.freeze({
   COIN_BONUS: 5,
 });
 
+// ─── Závod (time-trial) ──────────────────────────────────────────────────────
+
+const RACE = Object.freeze({
+  /** Cílová vzdálenost závodu v metrech. */
+  GOAL_METERS: 2000,
+  /** Kolik sekund odečte každá sebraná mince z výsledného času. */
+  COIN_TIME_BONUS: 5,
+});
+
 // ─── Policejní auto ──────────────────────────────────────────────────────────
 
 const POLICE = Object.freeze({

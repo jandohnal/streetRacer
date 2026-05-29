@@ -334,7 +334,7 @@ class Game {
     this._hud.setScoreSaveStatus('loading');
     const ok = await this._leaderboard.saveScore(
       name,
-      this._scoreSystem.totalScore,
+      this._scoreSystem.finalSeconds,
       this._scoreSystem.distanceMeters,
       this._scoreSystem.coinCount
     );
@@ -401,9 +401,10 @@ class Game {
   /**
    * Ukončí hru a zobrazí výsledky.
    * @private
-   * @param {boolean} [busted=false] - true = chycen policií, false = náraz.
+   * @param {boolean} [busted=false]   - true = chycen policií.
+   * @param {boolean} [finished=false] - true = dojel cílovou vzdálenost.
    */
-  _endGame(busted = false) {
+  _endGame(busted = false, finished = false) {
     this._state = GameState.GAME_OVER;
     this._inputManager.setEnabled(false);
     this._playerCar.lockInput();
@@ -415,11 +416,12 @@ class Game {
       : 0;
 
     this._hud.showGameOver(
-      this._scoreSystem.totalScore,
+      this._scoreSystem.finalSeconds,
       this._scoreSystem.distanceMeters,
       this._scoreSystem.coinCount,
       busted,
-      bustedSpeedKmh
+      bustedSpeedKmh,
+      finished
     );
   }
 
@@ -455,11 +457,12 @@ class Game {
     this._road.update(dt, this._speed);
     this._playerCar.update(dt);
 
-    // 3. Skóre — vzdálenost
+    // 3. Skóre — vzdálenost + čas závodu
     this._scoreSystem.addDistance(dt, this._speed);
+    this._scoreSystem.addTime(dt);
 
     // 4. Dopravní auta
-    this._trafficManager.update(dt, this._speed, this._player);
+    this._trafficManager.update(dt, this._speed, this._playerCar);
 
     // 5. Policejní auta
     this._policeManager.update(dt, this._speed);
@@ -471,7 +474,7 @@ class Game {
     this._bonusManager.update(dt, this._speed);
 
     // 6c. Závodní soupeři
-    this._racerManager.update(dt, this._speed, this._trafficManager.getCars(), this._player, this._policeManager.getCars());
+    this._racerManager.update(dt, this._speed, this._trafficManager.getCars(), this._playerCar, this._policeManager.getCars());
 
     // 6d. Vzájemné kolize všech aut (traffic, police, racer) — zabrání průniku
     CollisionSystem.resolveVehicleSeparation([
@@ -511,33 +514,20 @@ class Game {
       this._antiRadarTimer = Math.max(0, this._antiRadarTimer - dt);
     }
 
-    // 8. Kolize — náraz do dopravního auta (crash)
-    const crashTraffic = CollisionSystem.checkPlayerVsTraffic(
+    // 8. Fyzická kolize hráče s auty — neukončuje hru, jen zpomalí hráče
+    this._speed = CollisionSystem.resolvePlayerVsVehicles(
       this._playerCar,
-      this._trafficManager.getCars()
+      [
+        ...this._trafficManager.getCars(),
+        ...this._policeManager.getCars(),
+        ...this._racerManager.getRacers(),
+      ],
+      this._speed
     );
-    if (crashTraffic !== null) {
-      this._endGame(false);
-      return;
-    }
 
-    // 9. Kolize — náraz do karoserie policejního auta (crash)
-    const crashPolice = CollisionSystem.checkPlayerVsTraffic(
-      this._playerCar,
-      this._policeManager.getCars()
-    );
-    if (crashPolice !== null) {
-      this._endGame(false);
-      return;
-    }
-
-    // 9b. Kolize — náraz do závodního soupeře (crash)
-    const crashRacer = CollisionSystem.checkPlayerVsTraffic(
-      this._playerCar,
-      this._racerManager.getRacers()
-    );
-    if (crashRacer !== null) {
-      this._endGame(false);
+    // 9. Cíl závodu — dojetí cílové vzdálenosti
+    if (this._scoreSystem.distanceMeters >= RACE.GOAL_METERS) {
+      this._endGame(false, true);
       return;
     }
 
@@ -565,7 +555,7 @@ class Game {
 
     // 13. HUD refresh
     this._hud.update(
-      this._scoreSystem.totalScore,
+      this._scoreSystem.elapsedSeconds,
       this._scoreSystem.distanceMeters,
       this._speed
     );

@@ -15,6 +15,9 @@ class ScoreSystem {
 
     /** @private */
     this._coinCount  = 0;
+
+    /** @private — uplynulý herní čas závodu (s) */
+    this._elapsed = 0;
   }
 
   // ─── Veřejné metody ─────────────────────────────────────────────────────────
@@ -29,11 +32,35 @@ class ScoreSystem {
   }
 
   /**
+   * Přičte uplynulý čas závodu.
+   * @param {number} dt - Delta time (s).
+   */
+  addTime(dt) {
+    this._elapsed += dt;
+  }
+
+  /**
    * Přičte sebrané mince.
    * @param {number} count - Počet sebraných mincí v tomto framu.
    */
   addCoins(count) {
     this._coinCount += count;
+  }
+
+  /**
+   * Uplynulý čistý herní čas v sekundách.
+   * @returns {number}
+   */
+  get elapsedSeconds() {
+    return this._elapsed;
+  }
+
+  /**
+   * Výsledný čas závodu = uplynulý čas − (mince × bonus), nezáporný.
+   * @returns {number}
+   */
+  get finalSeconds() {
+    return Math.max(0, this._elapsed - this._coinCount * RACE.COIN_TIME_BONUS);
   }
 
   /**
@@ -66,5 +93,6 @@ class ScoreSystem {
   reset() {
     this._distancePx = 0;
     this._coinCount  = 0;
+    this._elapsed    = 0;
   }
 }

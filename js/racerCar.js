@@ -257,6 +257,13 @@ class RacerCar {
    * @private
    */
   _considerLaneChange(trafficCars, player, policeCars = [], emergency = false) {
+    // Žádný přejezd, pokud je hráč v okruhu 2× délky auta (radius)
+    if (player) {
+      const dx = LANE_CENTERS[player.laneIndex] - this._cx;
+      const dy = PLAYER.Y_CENTER - this._cy;
+      if (Math.hypot(dx, dy) < this._h * 2) return;
+    }
+
     const LOOK_AHEAD = emergency ? 120 : 220;
     const blockLeft    = this._isLaneBlockedAhead(this.laneIndex - 1, trafficCars, player, policeCars, LOOK_AHEAD);
     const blockCurrent = this._isLaneBlockedAhead(this.laneIndex,     trafficCars, player, policeCars, LOOK_AHEAD);

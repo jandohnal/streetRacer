@@ -335,7 +335,6 @@ class Game {
     const ok = await this._leaderboard.saveScore(
       name,
       this._scoreSystem.finalSeconds,
-      this._scoreSystem.distanceMeters,
       this._scoreSystem.coinCount
     );
     this._hud.setScoreSaveStatus(ok ? 'ok' : 'err');

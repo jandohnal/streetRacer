@@ -200,7 +200,9 @@ class AudioEngine {
           if (this._sources[key]) {
             try {
               this._sources[key].stop();
-            } catch (_) {}
+            } catch (_) {
+              // zdroj již nebyl přehrávám, ignorujeme
+            }
             this._sources[key] = null;
           }
         }
@@ -432,7 +434,9 @@ class AudioEngine {
     src.onended = () => {
       try {
         gainNode.disconnect();
-      } catch (_) {}
+      } catch (_) {
+        // uzel již byl odpojen, ignorujeme
+      }
     };
   }
 

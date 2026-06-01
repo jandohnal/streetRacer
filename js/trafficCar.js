@@ -168,6 +168,8 @@ class TrafficCar {
         );
         break;
       }
+      default:
+        break;
     }
   }
 

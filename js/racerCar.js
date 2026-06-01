@@ -421,6 +421,7 @@ class RacerCar {
       if (Math.abs(playerCx - this._cx) <= xOverlap) {
         const dist = this._cy - PLAYER.Y_CENTER;
         if (dist > 0 && dist < lookAhead && dist < bestDist) {
+          // eslint-disable-next-line no-useless-assignment
           bestDist = dist;
           best = { speed: 0, isPlayer: true, isPolice: false, dist };
         }

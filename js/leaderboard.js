@@ -66,27 +66,4 @@ class Leaderboard {
       return [];
     }
   }
-  }
-
-  /**
-   * Načte top N výsledků ze Firestore, seřazených podle času vzestupně
-   * (nejkratší čas = nejlepší).
-   * @returns {Promise<Array<{name:string, time:number, distance:number, coins:number}>>}
-   */
-  async getTopScores() {
-    if (!this._db) return [];
-    try {
-      const { collection, query, orderBy, limit, getDocs } = window._fbFirestore;
-      const q    = query(
-        collection(this._db, LEADERBOARD_COLLECTION),
-        orderBy('time', 'asc'),
-        limit(LEADERBOARD_TOP_N)
-      );
-      const snap = await getDocs(q);
-      return snap.docs.map(doc => doc.data());
-    } catch (err) {
-      console.error('[Leaderboard] Chyba při načítání:', err);
-      return [];
-    }
-  }
 }

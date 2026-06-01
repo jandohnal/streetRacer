@@ -15,7 +15,7 @@
 
 /** @enum {string} */
 const LaneChangeState = Object.freeze({
-  IDLE:   'idle',
+  IDLE: 'idle',
   SIGNAL: 'signal',
   MOVING: 'moving',
 });
@@ -66,7 +66,7 @@ class TrafficCar {
     this._group = null;
 
     /** @private — SVG element zadního levého světla */
-    this._rearLightLeft  = null;
+    this._rearLightLeft = null;
     /** @private — SVG element zadního pravého světla */
     this._rearLightRight = null;
 
@@ -76,22 +76,22 @@ class TrafficCar {
     // ─── Lane-change stav ───────────────────────────────────────────────────
 
     /** @private */
-    this._lcState      = LaneChangeState.IDLE;
+    this._lcState = LaneChangeState.IDLE;
     /** @private — cílový index pruhu */
     this._lcTargetLane = -1;
     /** @private — směr přejezdu: -1 = vlevo, +1 = vpravo */
-    this._lcDir        = 0;
+    this._lcDir = 0;
     /** @private — akumulovaný čas aktuální fáze */
-    this._lcTimer      = 0;
+    this._lcTimer = 0;
     /** @private — X střed na začátku pohybu */
-    this._lcFromX      = 0;
+    this._lcFromX = 0;
     /** @private — X střed cíle pohybu */
-    this._lcToX        = 0;
+    this._lcToX = 0;
 
     /** @private — čas bliknutí blinkru (akumulátor) */
-    this._blinkTimer   = 0;
+    this._blinkTimer = 0;
     /** @private — true = blinkr svítí */
-    this._blinkOn      = false;
+    this._blinkOn = false;
 
     this._createElements();
   }
@@ -113,7 +113,7 @@ class TrafficCar {
   _createElements() {
     const g = this._createElement('g');
     const def = this._def;
-    const hw = def.width  / 2;
+    const hw = def.width / 2;
     const hh = def.height / 2;
     const color = def.colors[Math.floor(Math.random() * def.colors.length)];
     const roofColor = this._darkenColor(color, 0.7);
@@ -139,31 +139,33 @@ class TrafficCar {
 
     switch (this.type) {
       case VehicleType.CAR: {
-        const rw = def.width  * 0.65;
+        const rw = def.width * 0.65;
         const rh = def.height * 0.38;
         g.appendChild(this._createRect(-rw / 2, -hh + def.height * 0.22, rw, rh, roofColor, 3));
         break;
       }
       case VehicleType.VAN: {
-        const rw = def.width  * 0.88;
+        const rw = def.width * 0.88;
         const rh = def.height * 0.55;
         g.appendChild(this._createRect(-rw / 2, -hh + def.height * 0.04, rw, rh, roofColor, 2));
         break;
       }
       case VehicleType.BUS: {
-        const rw = def.width  * 0.92;
+        const rw = def.width * 0.92;
         const rh = def.height * 0.82;
         g.appendChild(this._createRect(-rw / 2, -hh + def.height * 0.05, rw, rh, roofColor, 1));
         this._addBusWindows(g, hw, hh);
         break;
       }
       case VehicleType.TRUCK: {
-        const cabH = def.height * 0.30;
-        const cabW = def.width  * 0.90;
+        const cabH = def.height * 0.3;
+        const cabW = def.width * 0.9;
         g.appendChild(this._createRect(-cabW / 2, -hh + 4, cabW, cabH, roofColor, 2));
         const cargoH = def.height * 0.55;
         const cargoColor = this._darkenColor(roofColor, 0.85);
-        g.appendChild(this._createRect(-hw + 2, -hh + cabH + 8, def.width - 4, cargoH, cargoColor, 1));
+        g.appendChild(
+          this._createRect(-hw + 2, -hh + cabH + 8, def.width - 4, cargoH, cargoColor, 1),
+        );
         break;
       }
     }
@@ -179,7 +181,7 @@ class TrafficCar {
     const gapY = 22;
 
     for (let row = 0; row < rows; row++) {
-      g.appendChild(this._createRect(-hw + 5,      startY + row * gapY, winW, winH, winColor, 1));
+      g.appendChild(this._createRect(-hw + 5, startY + row * gapY, winW, winH, winColor, 1));
       g.appendChild(this._createRect(hw - winW - 5, startY + row * gapY, winW, winH, winColor, 1));
     }
   }
@@ -190,21 +192,21 @@ class TrafficCar {
     const lh = 4;
 
     // Přední světla
-    g.appendChild(this._createRect(-hw + 3,      -hh + 3, lw, lh, '#ffffaa', 1));
+    g.appendChild(this._createRect(-hw + 3, -hh + 3, lw, lh, '#ffffaa', 1));
     g.appendChild(this._createRect(hw - lw - 3, -hh + 3, lw, lh, '#ffffaa', 1));
 
     // Beam glow kružnice za zadními světly (zpočátku neviditelné)
     const glowY = hh - lh - 3 + lh / 2;
     const glowLx = -hw + 3 + lw / 2;
-    const glowRx =  hw - lw - 3 + lw / 2;
+    const glowRx = hw - lw - 3 + lw / 2;
 
-    this._beamLeft  = this._createCircle(glowLx, glowY, 9, '#ffaa00', 0);
+    this._beamLeft = this._createCircle(glowLx, glowY, 9, '#ffaa00', 0);
     this._beamRight = this._createCircle(glowRx, glowY, 9, '#ffaa00', 0);
     g.appendChild(this._beamLeft);
     g.appendChild(this._beamRight);
 
     // Zadní světla — uchováme reference pro blinkr (vykreslíme nad glow)
-    this._rearLightLeft  = this._createRect(-hw + 3,      hh - lh - 3, lw, lh, '#ff4444', 1);
+    this._rearLightLeft = this._createRect(-hw + 3, hh - lh - 3, lw, lh, '#ff4444', 1);
     this._rearLightRight = this._createRect(hw - lw - 3, hh - lh - 3, lw, lh, '#ff4444', 1);
     g.appendChild(this._rearLightLeft);
     g.appendChild(this._rearLightRight);
@@ -256,32 +258,32 @@ class TrafficCar {
       this._blinkOn = !this._blinkOn;
     }
 
-    const blinkColor  = this._blinkOn ? '#ffaa00' : '#ff4444';
-    const beamOpacity = this._blinkOn ? '0.45'    : '0';
+    const blinkColor = this._blinkOn ? '#ffaa00' : '#ff4444';
+    const beamOpacity = this._blinkOn ? '0.45' : '0';
     const steadyColor = '#ff4444';
 
     if (this._lcDir < 0) {
       // Bliká levé zadní světlo + levý beam
-      this._rearLightLeft.setAttribute('fill',   blinkColor);
-      this._beamLeft.setAttribute('opacity',      beamOpacity);
-      this._rearLightRight.setAttribute('fill',  steadyColor);
-      this._beamRight.setAttribute('opacity',     '0');
+      this._rearLightLeft.setAttribute('fill', blinkColor);
+      this._beamLeft.setAttribute('opacity', beamOpacity);
+      this._rearLightRight.setAttribute('fill', steadyColor);
+      this._beamRight.setAttribute('opacity', '0');
     } else {
       // Bliká pravé zadní světlo + pravý beam
-      this._rearLightLeft.setAttribute('fill',   steadyColor);
-      this._beamLeft.setAttribute('opacity',      '0');
-      this._rearLightRight.setAttribute('fill',  blinkColor);
-      this._beamRight.setAttribute('opacity',     beamOpacity);
+      this._rearLightLeft.setAttribute('fill', steadyColor);
+      this._beamLeft.setAttribute('opacity', '0');
+      this._rearLightRight.setAttribute('fill', blinkColor);
+      this._beamRight.setAttribute('opacity', beamOpacity);
     }
   }
 
   /** @private */
   _resetBlinker() {
-    this._blinkOn    = false;
+    this._blinkOn = false;
     this._blinkTimer = 0;
-    this._rearLightLeft.setAttribute('fill',  '#ff4444');
+    this._rearLightLeft.setAttribute('fill', '#ff4444');
     this._rearLightRight.setAttribute('fill', '#ff4444');
-    this._beamLeft.setAttribute('opacity',  '0');
+    this._beamLeft.setAttribute('opacity', '0');
     this._beamRight.setAttribute('opacity', '0');
   }
 
@@ -298,7 +300,10 @@ class TrafficCar {
     const r = parseInt(hex.slice(1, 3), 16);
     const g = parseInt(hex.slice(3, 5), 16);
     const b = parseInt(hex.slice(5, 7), 16);
-    const d = (v) => Math.max(0, Math.round(v * factor)).toString(16).padStart(2, '0');
+    const d = (v) =>
+      Math.max(0, Math.round(v * factor))
+        .toString(16)
+        .padStart(2, '0');
     return `#${d(r)}${d(g)}${d(b)}`;
   }
 
@@ -330,9 +335,8 @@ class TrafficCar {
         this._lcState = LaneChangeState.MOVING;
         this._lcTimer = 0;
         this._lcFromX = this._cx;
-        this._lcToX   = LANE_CENTERS[this._lcTargetLane];
+        this._lcToX = LANE_CENTERS[this._lcTargetLane];
       }
-
     } else if (this._lcState === LaneChangeState.MOVING) {
       this._updateBlinker(dt);
       this._lcTimer += dt;
@@ -341,10 +345,10 @@ class TrafficCar {
       this._cx = this._lcFromX + (this._lcToX - this._lcFromX) * this._easeInOut(t);
 
       if (t >= 1) {
-        this._cx       = this._lcToX;
+        this._cx = this._lcToX;
         this.laneIndex = this._lcTargetLane;
-        this._lcState  = LaneChangeState.IDLE;
-        this._lcTimer  = 0;
+        this._lcState = LaneChangeState.IDLE;
+        this._lcTimer = 0;
         this._resetBlinker();
       }
     }
@@ -372,11 +376,11 @@ class TrafficCar {
   startLaneChange(targetLane) {
     if (this._lcState !== LaneChangeState.IDLE) return;
     this._lcTargetLane = targetLane;
-    this._lcDir        = targetLane > this.laneIndex ? 1 : -1;
-    this._lcState      = LaneChangeState.SIGNAL;
-    this._lcTimer      = 0;
-    this._blinkTimer   = 0;
-    this._blinkOn      = true;
+    this._lcDir = targetLane > this.laneIndex ? 1 : -1;
+    this._lcState = LaneChangeState.SIGNAL;
+    this._lcTimer = 0;
+    this._blinkTimer = 0;
+    this._blinkOn = true;
   }
 
   /** @returns {boolean} true pokud auto právě přejíždí pruh */
@@ -389,42 +393,56 @@ class TrafficCar {
    * @returns {{ x: number, y: number, width: number, height: number }}
    */
   getHitbox() {
-    const hw = this._def.width  / 2;
+    const hw = this._def.width / 2;
     const hh = this._def.height / 2;
     return {
-      x:      this._cx - hw,
-      y:      this._cy - hh,
-      width:  this._def.width,
+      x: this._cx - hw,
+      y: this._cy - hh,
+      width: this._def.width,
       height: this._def.height,
     };
   }
 
   /** @returns {number} */
-  get cy() { return this._cy; }
+  get cy() {
+    return this._cy;
+  }
 
   /** @returns {number} */
-  get cx() { return this._cx; }
+  get cx() {
+    return this._cx;
+  }
 
   /** @returns {number} */
-  get speed() { return this._speed; }
+  get speed() {
+    return this._speed;
+  }
 
   /** @returns {number} */
-  get height() { return this._def.height; }
+  get height() {
+    return this._def.height;
+  }
 
   /** @returns {number} hmotnost úměrná ploše (pro kolizní impulzy) */
-  get mass() { return this._def.width * this._def.height; }
+  get mass() {
+    return this._def.width * this._def.height;
+  }
 
   /**
    * Přímo nastaví aktuální rychlost (kolizní přenos hybnosti).
    * @param {number} v
    */
-  setSpeed(v) { this._speed = Math.max(0, v); }
+  setSpeed(v) {
+    this._speed = Math.max(0, v);
+  }
 
   /**
    * Přidá boční rychlost (kolizní odraz do strany).
    * @param {number} dvx
    */
-  applyLateralImpulse(dvx) { this._vx += dvx; }
+  applyLateralImpulse(dvx) {
+    this._vx += dvx;
+  }
 
   /**
    * Posune vozidlo o daný offset (separace kolizí).
@@ -467,10 +485,14 @@ class TrafficCar {
   }
 
   /** Vrátí jak dlouho je auto blokováno (s). Relevantní jen pro CAR. */
-  get blockedTimer() { return this._blockedTimer; }
+  get blockedTimer() {
+    return this._blockedTimer;
+  }
 
   /** Resetuje čítač blokování (po zahájení přejezdu). */
-  resetBlockedTimer() { this._blockedTimer = 0; }
+  resetBlockedTimer() {
+    this._blockedTimer = 0;
+  }
 
   /** Odstraní SVG skupinu z dokumentu. */
   remove() {

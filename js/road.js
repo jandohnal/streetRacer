@@ -43,38 +43,44 @@ class Road {
     const svg = this._svg;
 
     // Podklad celé herní plochy
-    const surface = this._createRect(
-      0, 0, CANVAS.WIDTH, CANVAS.HEIGHT,
-      ROAD.SURFACE_COLOR
-    );
+    const surface = this._createRect(0, 0, CANVAS.WIDTH, CANVAS.HEIGHT, ROAD.SURFACE_COLOR);
 
     // Krajnice vlevo
     const shoulderLeft = this._createRect(
-      0, 0, ROAD.SHOULDER_WIDTH, CANVAS.HEIGHT,
-      ROAD.SHOULDER_COLOR
+      0,
+      0,
+      ROAD.SHOULDER_WIDTH,
+      CANVAS.HEIGHT,
+      ROAD.SHOULDER_COLOR,
     );
 
     // Krajnice vpravo
     const shoulderRight = this._createRect(
-      CANVAS.WIDTH - ROAD.SHOULDER_WIDTH, 0,
-      ROAD.SHOULDER_WIDTH, CANVAS.HEIGHT,
-      ROAD.SHOULDER_COLOR
+      CANVAS.WIDTH - ROAD.SHOULDER_WIDTH,
+      0,
+      ROAD.SHOULDER_WIDTH,
+      CANVAS.HEIGHT,
+      ROAD.SHOULDER_COLOR,
     );
 
     // Žlutá krajnicová čára vlevo
     const borderLeft = this._createLine(
-      ROAD.SHOULDER_WIDTH, 0,
-      ROAD.SHOULDER_WIDTH, CANVAS.HEIGHT,
+      ROAD.SHOULDER_WIDTH,
+      0,
+      ROAD.SHOULDER_WIDTH,
+      CANVAS.HEIGHT,
       ROAD.SHOULDER_LINE_COLOR,
-      ROAD.SHOULDER_LINE_WIDTH
+      ROAD.SHOULDER_LINE_WIDTH,
     );
 
     // Žlutá krajnicová čára vpravo
     const borderRight = this._createLine(
-      CANVAS.WIDTH - ROAD.SHOULDER_WIDTH, 0,
-      CANVAS.WIDTH - ROAD.SHOULDER_WIDTH, CANVAS.HEIGHT,
+      CANVAS.WIDTH - ROAD.SHOULDER_WIDTH,
+      0,
+      CANVAS.WIDTH - ROAD.SHOULDER_WIDTH,
+      CANVAS.HEIGHT,
       ROAD.SHOULDER_LINE_COLOR,
-      ROAD.SHOULDER_LINE_WIDTH
+      ROAD.SHOULDER_LINE_WIDTH,
     );
 
     // Skupina přerušovaných čar pruhů (animuje se translateY)
@@ -89,9 +95,12 @@ class Road {
     for (let i = 0; i < lineCount; i++) {
       const x = ROAD.SHOULDER_WIDTH + (i + 1) * LANE_WIDTH;
       const line = this._createLine(
-        x, startY, x, startY + totalHeight,
+        x,
+        startY,
+        x,
+        startY + totalHeight,
         ROAD.LANE_LINE_COLOR,
-        ROAD.LANE_LINE_WIDTH
+        ROAD.LANE_LINE_WIDTH,
       );
       line.setAttribute('stroke-dasharray', `${ROAD.LANE_LINE_DASH} ${ROAD.LANE_LINE_GAP}`);
       this._laneLineGroup.appendChild(line);
@@ -167,10 +176,7 @@ class Road {
    */
   update(dt, speed) {
     this._lineOffsetY = (this._lineOffsetY + speed * dt) % LANE_ANIM.CYCLE;
-    this._laneLineGroup.setAttribute(
-      'transform',
-      `translate(0, ${this._lineOffsetY})`
-    );
+    this._laneLineGroup.setAttribute('transform', `translate(0, ${this._lineOffsetY})`);
   }
 
   /**

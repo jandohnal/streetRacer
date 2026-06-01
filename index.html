@@ -1,136 +1,145 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="cs">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
-  <title>Street Racer</title>
-  <link rel="stylesheet" href="style.css" />
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+    <title>Street Racer</title>
+    <link rel="stylesheet" href="style.css" />
 
-  <!-- Firebase CDN (compat — funguje bez npm/bundleru) -->
-  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
-  <script>
-    // Inicializace Firebase
-    const _fbApp = firebase.initializeApp({
-      apiKey:            "AIzaSyAwRRtODAFz7eP8BQJ6lOsBeLs3hwXz_ew",
-      authDomain:        "street-racer-2570c.firebaseapp.com",
-      projectId:         "street-racer-2570c",
-      storageBucket:     "street-racer-2570c.firebasestorage.app",
-      messagingSenderId: "1010261990180",
-      appId:             "1:1010261990180:web:6d948db4da77be181231b1",
-    });
-    window._fbDb         = firebase.firestore();
-    // Wrapper aby leaderboard.js mohl používat stejné API
-    window._fbFirestore  = {
-      collection: (db, path)        => db.collection(path),
-      addDoc:     (ref, data)       => ref.add(data),
-      query:      (ref, ...ops)     => ops.reduce((r, op) => op(r), ref),
-      orderBy:    (field, dir)      => r => r.orderBy(field, dir),
-      limit:      (n)               => r => r.limit(n),
-      getDocs:    (ref)             => ref.get(),
-    };
-  </script>
-</head>
-<body>
+    <!-- Firebase CDN (compat — funguje bez npm/bundleru) -->
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+    <script>
+      // Inicializace Firebase
+      const _fbApp = firebase.initializeApp({
+        apiKey: 'AIzaSyAwRRtODAFz7eP8BQJ6lOsBeLs3hwXz_ew',
+        authDomain: 'street-racer-2570c.firebaseapp.com',
+        projectId: 'street-racer-2570c',
+        storageBucket: 'street-racer-2570c.firebasestorage.app',
+        messagingSenderId: '1010261990180',
+        appId: '1:1010261990180:web:6d948db4da77be181231b1',
+      });
+      window._fbDb = firebase.firestore();
+      // Wrapper aby leaderboard.js mohl používat stejné API
+      window._fbFirestore = {
+        collection: (db, path) => db.collection(path),
+        addDoc: (ref, data) => ref.add(data),
+        query: (ref, ...ops) => ops.reduce((r, op) => op(r), ref),
+        orderBy: (field, dir) => (r) => r.orderBy(field, dir),
+        limit: (n) => (r) => r.limit(n),
+        getDocs: (ref) => ref.get(),
+      };
+    </script>
+  </head>
+  <body>
+    <div id="game-container">
+      <!-- Herní plocha -->
+      <svg id="game-canvas" xmlns="http://www.w3.org/2000/svg"></svg>
 
-  <div id="game-container">
-
-    <!-- Herní plocha -->
-    <svg id="game-canvas" xmlns="http://www.w3.org/2000/svg"></svg>
-
-    <!-- HUD overlay -->
-    <div id="hud" aria-live="polite">
-      <div id="hud-score">
-        <span class="hud-label">ČAS</span>
-        <span class="hud-value" id="hud-score-value">0:00.0</span>
-      </div>
-      <div id="hud-distance">
-        <span class="hud-label">VZDÁLENOST</span>
-        <span class="hud-value" id="hud-distance-value">0 m</span>
-      </div>
-      <div id="hud-speed">
-        <span class="hud-label">RYCHLOST</span>
-        <span class="hud-value" id="hud-speed-value">0 km/h</span>
-      </div>
-      <button id="btn-mute" class="btn-mute muted" aria-label="Zapnout zvuk" title="Zapnout/vypnout zvuk">
-        <span class="mute-icon mute-off">&#128263;</span>
-        <span class="mute-icon mute-on">&#128266;</span>
-      </button>
-    </div>
-
-    <!-- Anti-radar odpočet (pravý horní roh, zobrazuje se jen při aktivním bonusu) -->
-    <div id="hud-antiradar" class="hud-antiradar hidden">
-      <span class="antiradar-icon">★</span>
-      <span id="hud-antirada-timer" class="antirada-timer">30</span><span class="antirada-unit">s</span>
-    </div>
-
-    <!-- Start / Game Over overlay -->
-    <div id="overlay" class="overlay">
-      <div class="overlay-panel">
-        <h1 id="overlay-title">STREET RACER</h1>
-        <div id="overlay-stats" class="overlay-stats hidden">
-          <p>Čas: <strong id="result-score">0:00.0</strong></p>
-          <p>Vzdálenost: <strong id="result-distance">0 m</strong></p>
-          <p>Mince: <strong id="result-coins">0</strong></p>
+      <!-- HUD overlay -->
+      <div id="hud" aria-live="polite">
+        <div id="hud-score">
+          <span class="hud-label">ČAS</span>
+          <span class="hud-value" id="hud-score-value">0:00.0</span>
         </div>
-        <!-- Zadání jména pro leaderboard (zobrazí se po game over) -->
-        <div id="name-entry" class="name-entry hidden">
-          <input id="input-name" class="name-input" type="text" maxlength="20"
-                 placeholder="Tvoje jméno" autocomplete="off" spellcheck="false" />
-          <button id="btn-submit-score" class="btn-primary btn-small">ULOŽIT SKÓRE</button>
-          <p id="score-save-status" class="score-save-status"></p>
+        <div id="hud-distance">
+          <span class="hud-label">VZDÁLENOST</span>
+          <span class="hud-value" id="hud-distance-value">0 m</span>
         </div>
-        <p id="overlay-subtitle">Vyhýbej se autům a sbírej mince!</p>
-        <button id="btn-start" class="btn-primary">HRÁT</button>
-        <button id="btn-leaderboard" class="btn-secondary hidden">ŽEBŘÍČEK</button>
-        <button id="btn-close" class="btn-secondary hidden">ZPĚT NA ÚVOD</button>
+        <div id="hud-speed">
+          <span class="hud-label">RYCHLOST</span>
+          <span class="hud-value" id="hud-speed-value">0 km/h</span>
+        </div>
+        <button
+          id="btn-mute"
+          class="btn-mute muted"
+          aria-label="Zapnout zvuk"
+          title="Zapnout/vypnout zvuk"
+        >
+          <span class="mute-icon mute-off">&#128263;</span>
+          <span class="mute-icon mute-on">&#128266;</span>
+        </button>
+      </div>
+
+      <!-- Anti-radar odpočet (pravý horní roh, zobrazuje se jen při aktivním bonusu) -->
+      <div id="hud-antiradar" class="hud-antiradar hidden">
+        <span class="antiradar-icon">★</span>
+        <span id="hud-antirada-timer" class="antirada-timer">30</span
+        ><span class="antirada-unit">s</span>
+      </div>
+
+      <!-- Start / Game Over overlay -->
+      <div id="overlay" class="overlay">
+        <div class="overlay-panel">
+          <h1 id="overlay-title">STREET RACER</h1>
+          <div id="overlay-stats" class="overlay-stats hidden">
+            <p>Čas: <strong id="result-score">0:00.0</strong></p>
+            <p>Vzdálenost: <strong id="result-distance">0 m</strong></p>
+            <p>Mince: <strong id="result-coins">0</strong></p>
+          </div>
+          <!-- Zadání jména pro leaderboard (zobrazí se po game over) -->
+          <div id="name-entry" class="name-entry hidden">
+            <input
+              id="input-name"
+              class="name-input"
+              type="text"
+              maxlength="20"
+              placeholder="Tvoje jméno"
+              autocomplete="off"
+              spellcheck="false"
+            />
+            <button id="btn-submit-score" class="btn-primary btn-small">ULOŽIT SKÓRE</button>
+            <p id="score-save-status" class="score-save-status"></p>
+          </div>
+          <p id="overlay-subtitle">Vyhýbej se autům a sbírej mince!</p>
+          <button id="btn-start" class="btn-primary">HRÁT</button>
+          <button id="btn-leaderboard" class="btn-secondary hidden">ŽEBŘÍČEK</button>
+          <button id="btn-close" class="btn-secondary hidden">ZPĚT NA ÚVOD</button>
+        </div>
+      </div>
+
+      <!-- Leaderboard overlay -->
+      <div id="leaderboard-overlay" class="overlay hidden">
+        <div class="overlay-panel leaderboard-panel">
+          <h1 id="leaderboard-title">ŽEBŘÍČEK</h1>
+          <ol id="leaderboard-list" class="leaderboard-list">
+            <li class="lb-loading">Načítám...</li>
+          </ol>
+          <button id="btn-leaderboard-close" class="btn-secondary">ZPĚT</button>
+        </div>
+      </div>
+
+      <!-- Mobilní ovladač — ▲▼ vlevo uprostřed, swipe pro levo/pravo -->
+      <div id="controls">
+        <div id="controls-vertical">
+          <button id="btn-up" class="control-btn" aria-label="Zrychlit">&#9650;</button>
+          <button id="btn-down" class="control-btn" aria-label="Brzdit">&#9660;</button>
+        </div>
       </div>
     </div>
 
-    <!-- Leaderboard overlay -->
-    <div id="leaderboard-overlay" class="overlay hidden">
-      <div class="overlay-panel leaderboard-panel">
-        <h1 id="leaderboard-title">ŽEBŘÍČEK</h1>
-        <ol id="leaderboard-list" class="leaderboard-list">
-          <li class="lb-loading">Načítám...</li>
-        </ol>
-        <button id="btn-leaderboard-close" class="btn-secondary">ZPĚT</button>
-      </div>
-    </div>
-
-    <!-- Mobilní ovladač — ▲▼ vlevo uprostřed, swipe pro levo/pravo -->
-    <div id="controls">
-      <div id="controls-vertical">
-        <button id="btn-up"   class="control-btn" aria-label="Zrychlit">&#9650;</button>
-        <button id="btn-down" class="control-btn" aria-label="Brzdit">&#9660;</button>
-      </div>
-    </div>
-
-  </div>
-
-  <!-- Moduly - pořadí záleží na závislostech -->
-  <script src="js/constants.js"></script>
-  <script src="js/road.js"></script>
-  <script src="js/particle.js"></script>
-  <script src="js/particleSystem.js"></script>
-  <script src="js/playerCar.js"></script>
-  <script src="js/trafficCar.js"></script>
-  <script src="js/trafficManager.js"></script>
-  <script src="js/policeCar.js"></script>
-  <script src="js/policeManager.js"></script>
-  <script src="js/coin.js"></script>
-  <script src="js/coinManager.js"></script>
-  <script src="js/bonus.js"></script>
-  <script src="js/bonusManager.js"></script>
-  <script src="js/racerCar.js"></script>
-  <script src="js/racerManager.js"></script>
-  <script src="js/collisionSystem.js"></script>
-  <script src="js/scoreSystem.js"></script>
-  <script src="js/leaderboard.js"></script>
-  <script src="js/hud.js"></script>
-  <script src="js/audioBuffers.js"></script>
-  <script src="js/audioEngine.js"></script>
-  <script src="js/game.js"></script>
-
-</body>
+    <!-- Moduly - pořadí záleží na závislostech -->
+    <script src="js/constants.js"></script>
+    <script src="js/road.js"></script>
+    <script src="js/particle.js"></script>
+    <script src="js/particleSystem.js"></script>
+    <script src="js/playerCar.js"></script>
+    <script src="js/trafficCar.js"></script>
+    <script src="js/trafficManager.js"></script>
+    <script src="js/policeCar.js"></script>
+    <script src="js/policeManager.js"></script>
+    <script src="js/coin.js"></script>
+    <script src="js/coinManager.js"></script>
+    <script src="js/bonus.js"></script>
+    <script src="js/bonusManager.js"></script>
+    <script src="js/racerCar.js"></script>
+    <script src="js/racerManager.js"></script>
+    <script src="js/collisionSystem.js"></script>
+    <script src="js/scoreSystem.js"></script>
+    <script src="js/leaderboard.js"></script>
+    <script src="js/hud.js"></script>
+    <script src="js/audioBuffers.js"></script>
+    <script src="js/audioEngine.js"></script>
+    <script src="js/game.js"></script>
+  </body>
 </html>

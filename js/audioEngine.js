@@ -34,19 +34,19 @@ class AudioEngine {
      * @private
      */
     this._rawBuffers = {
-      low:     null,
-      mid:     null,
-      high:    null,
-      turbo:   null,
+      low: null,
+      mid: null,
+      high: null,
+      turbo: null,
       blowoff: null,
     };
 
     /** @private @type {Object.<string, AudioBuffer>} — dekódované buffery */
     this._buffers = {
-      low:     null,
-      mid:     null,
-      high:    null,
-      turbo:   null,
+      low: null,
+      mid: null,
+      high: null,
+      turbo: null,
       blowoff: null,
     };
 
@@ -54,17 +54,17 @@ class AudioEngine {
     this._sources = { low: null, mid: null, high: null, turbo: null };
 
     /** @private — gain nody */
-    this._gains   = { low: null, mid: null, high: null, turbo: null, master: null };
+    this._gains = { low: null, mid: null, high: null, turbo: null, master: null };
 
     /** @private — index aktuálního stupně (0–4) */
-    this._gear         = 0;
+    this._gear = 0;
     /** @private — aktuální lerpovaná pozice v stupni (0–1) */
-    this._gearN        = 0;
+    this._gearN = 0;
     this._blowoffFired = false;
-    this._running      = false;
+    this._running = false;
 
     /** @private — jak dlouho hráč nepřetržitě drží plyn (s) */
-    this._throttleHeldTime     = 0;
+    this._throttleHeldTime = 0;
     /** @private — hodnota _throttleHeldTime z předchozího framu */
     this._prevThrottleHeldTime = 0;
 
@@ -86,9 +86,9 @@ class AudioEngine {
       // Převod base64 data URI → ArrayBuffer bez fetch/XHR
       for (const key of ['low', 'mid', 'high', 'turbo', 'blowoff']) {
         const dataUri = AUDIO_BUFFERS[key];
-        const base64  = dataUri.split(',')[1];
-        const binary  = atob(base64);
-        const bytes   = new Uint8Array(binary.length);
+        const base64 = dataUri.split(',')[1];
+        const binary = atob(base64);
+        const bytes = new Uint8Array(binary.length);
         for (let i = 0; i < binary.length; i++) {
           bytes[i] = binary.charCodeAt(i);
         }
@@ -97,7 +97,6 @@ class AudioEngine {
 
       this._rawLoaded = true;
       console.log('[AudioEngine] Buffery připraveny, čeká se na start().');
-
     } catch (err) {
       console.warn('[AudioEngine] Načítání zvuků selhalo:', err.message);
     }
@@ -133,9 +132,7 @@ class AudioEngine {
       for (const key of ['low', 'mid', 'high', 'turbo', 'blowoff']) {
         if (this._rawBuffers[key] && !this._buffers[key]) {
           // slice() — decodeAudioData spotřebuje buffer, potřebujeme kopii pro restart
-          this._buffers[key] = await this._ctx.decodeAudioData(
-            this._rawBuffers[key].slice(0)
-          );
+          this._buffers[key] = await this._ctx.decodeAudioData(this._rawBuffers[key].slice(0));
         }
       }
     } catch (err) {
@@ -159,19 +156,19 @@ class AudioEngine {
 
     // Fade-in master gainu (respektuje stav mute)
     const master = this._gains.master;
-    const t      = this._ctx.currentTime;
+    const t = this._ctx.currentTime;
     const targetVol = this._muted ? 0 : AUDIO.MASTER_VOLUME;
     master.gain.cancelScheduledValues(t);
     master.gain.setValueAtTime(0, t);
     master.gain.linearRampToValueAtTime(targetVol, t + 0.3);
 
     // Reset herního stavu
-    this._gear                 = 0;
-    this._gearN                = 0;
-    this._blowoffFired         = false;
-    this._throttleHeldTime     = 0;
+    this._gear = 0;
+    this._gearN = 0;
+    this._blowoffFired = false;
+    this._throttleHeldTime = 0;
     this._prevThrottleHeldTime = 0;
-    this._running              = true;
+    this._running = true;
 
     console.log('[AudioEngine] Engine spuštěn.');
   }
@@ -183,11 +180,11 @@ class AudioEngine {
     if (!this._running) return;
     this._running = false;
 
-    const ctx    = this._ctx;
+    const ctx = this._ctx;
     const master = this._gains.master;
-    const turbo  = this._gains.turbo;
-    const t      = ctx.currentTime;
-    const tEnd   = t + AUDIO.FADE_OUT_TIME;
+    const turbo = this._gains.turbo;
+    const t = ctx.currentTime;
+    const tEnd = t + AUDIO.FADE_OUT_TIME;
 
     master.gain.cancelScheduledValues(t);
     master.gain.setValueAtTime(master.gain.value, t);
@@ -197,20 +194,25 @@ class AudioEngine {
     turbo.gain.setValueAtTime(turbo.gain.value, t);
     turbo.gain.linearRampToValueAtTime(0, tEnd);
 
-    setTimeout(() => {
-      for (const key of ['low', 'mid', 'high', 'turbo']) {
-        if (this._sources[key]) {
-          try { this._sources[key].stop(); } catch (_) {}
-          this._sources[key] = null;
+    setTimeout(
+      () => {
+        for (const key of ['low', 'mid', 'high', 'turbo']) {
+          if (this._sources[key]) {
+            try {
+              this._sources[key].stop();
+            } catch (_) {}
+            this._sources[key] = null;
+          }
         }
-      }
-      // Nuluj gains pro příští start()
-      for (const key of Object.keys(this._gains)) {
-        this._gains[key] = null;
-      }
-      ctx.suspend();
-      console.log('[AudioEngine] Engine zastaven.');
-    }, AUDIO.FADE_OUT_TIME * 1000 + 50);
+        // Nuluj gains pro příští start()
+        for (const key of Object.keys(this._gains)) {
+          this._gains[key] = null;
+        }
+        ctx.suspend();
+        console.log('[AudioEngine] Engine zastaven.');
+      },
+      AUDIO.FADE_OUT_TIME * 1000 + 50,
+    );
   }
 
   /**
@@ -254,9 +256,9 @@ class AudioEngine {
     this._gear = gear;
 
     // Lerp n — rychlost závisí na throttle (engine braking = rychlejší pokles)
-    const lerpSpeed  = throttle ? AUDIO.RPM_LERP_ACCEL : AUDIO.RPM_LERP_DECEL;
+    const lerpSpeed = throttle ? AUDIO.RPM_LERP_ACCEL : AUDIO.RPM_LERP_DECEL;
     const lerpFactor = 1 - Math.exp(-lerpSpeed * dt);
-    this._gearN      = this._gearN + (targetN - this._gearN) * lerpFactor;
+    this._gearN = this._gearN + (targetN - this._gearN) * lerpFactor;
 
     // n_global = plynulá pozice přes celý rychlostní rozsah (0–1)
     // Používá se pro crossfade vrstev — nezávislé na přeřazení
@@ -286,7 +288,7 @@ class AudioEngine {
 
     for (const layer of ['low', 'mid', 'high']) {
       const gain = ctx.createGain();
-      gain.gain.value = layer === 'low' ? 1 : 0;   // low jako výchozí vrstva
+      gain.gain.value = layer === 'low' ? 1 : 0; // low jako výchozí vrstva
       gain.connect(this._gains.master);
       this._gains[layer] = gain;
     }
@@ -310,7 +312,7 @@ class AudioEngine {
    * @returns {{ gear: number, targetN: number, rate: number }}
    */
   _calcGearAndRate(speed, throttle) {
-    const defs    = AUDIO.GEAR_DEFS;
+    const defs = AUDIO.GEAR_DEFS;
     const maxGear = AUDIO.GEAR_COUNT - 1;
 
     // Přeřazení nahoru
@@ -319,7 +321,7 @@ class AudioEngine {
     }
     // Přeřazení dolů (hystereze 5 % šířky stupně)
     while (this._gear > 0) {
-      const prevDef  = defs[this._gear - 1];
+      const prevDef = defs[this._gear - 1];
       const hysteresis = (defs[this._gear].speedHigh - defs[this._gear].speedLow) * 0.05;
       if (speed < defs[this._gear].speedLow - hysteresis) {
         this._gear--;
@@ -328,11 +330,9 @@ class AudioEngine {
       }
     }
 
-    const def       = defs[this._gear];
-    const span      = def.speedHigh - def.speedLow;
-    const targetN   = span > 0
-      ? Math.max(0, Math.min(1, (speed - def.speedLow) / span))
-      : 0;
+    const def = defs[this._gear];
+    const span = def.speedHigh - def.speedLow;
+    const targetN = span > 0 ? Math.max(0, Math.min(1, (speed - def.speedLow) / span)) : 0;
 
     // playbackRate pro aktuální pozici v stupni
     let rate = def.rateStart + targetN * (def.rateEnd - def.rateStart);
@@ -367,12 +367,12 @@ class AudioEngine {
    * @param {boolean} throttle
    */
   _updateLayers(nGlobal, rate, throttle) {
-    const gainLow  = Math.max(0, Math.min(1, 1 - nGlobal * 3));
-    const gainMid  = Math.max(0, Math.min(1, 1 - Math.abs(nGlobal - 0.5) * 3));
+    const gainLow = Math.max(0, Math.min(1, 1 - nGlobal * 3));
+    const gainMid = Math.max(0, Math.min(1, 1 - Math.abs(nGlobal - 0.5) * 3));
     const gainHigh = Math.max(0, Math.min(1, (nGlobal - 0.67) * 3));
 
-    this._setGain(this._gains.low,  gainLow);
-    this._setGain(this._gains.mid,  gainMid);
+    this._setGain(this._gains.low, gainLow);
+    this._setGain(this._gains.mid, gainMid);
     this._setGain(this._gains.high, gainHigh);
 
     // Plynulý lerp playbackRate — zamezí skokovému praskání při přeřazení
@@ -406,9 +406,9 @@ class AudioEngine {
 
   /** @private */
   _createLoopSource(buffer) {
-    const src  = this._ctx.createBufferSource();
+    const src = this._ctx.createBufferSource();
     src.buffer = buffer;
-    src.loop   = true;
+    src.loop = true;
     return src;
   }
 
@@ -424,12 +424,16 @@ class AudioEngine {
     gainNode.gain.value = volume;
     gainNode.connect(this._gains.master);
 
-    const src  = this._ctx.createBufferSource();
+    const src = this._ctx.createBufferSource();
     src.buffer = buffer;
-    src.loop   = false;
+    src.loop = false;
     src.connect(gainNode);
     src.start(0);
-    src.onended = () => { try { gainNode.disconnect(); } catch (_) {} };
+    src.onended = () => {
+      try {
+        gainNode.disconnect();
+      } catch (_) {}
+    };
   }
 
   /**

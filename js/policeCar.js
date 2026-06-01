@@ -95,57 +95,47 @@ class PoliceCar {
     const radar = this._createElement('circle');
     radar.setAttribute('cx', 0);
     radar.setAttribute('cy', 0);
-    radar.setAttribute('r',  this._baseRadarRadius());
-    radar.setAttribute('fill',         POLICE.RADAR_COLOR);
+    radar.setAttribute('r', this._baseRadarRadius());
+    radar.setAttribute('fill', POLICE.RADAR_COLOR);
     radar.setAttribute('fill-opacity', POLICE.RADAR_OPACITY);
-    radar.setAttribute('stroke',       POLICE.RADAR_STROKE);
+    radar.setAttribute('stroke', POLICE.RADAR_STROKE);
     radar.setAttribute('stroke-width', POLICE.RADAR_STROKE_WIDTH);
     this._radarCircle = radar;
     g.appendChild(radar);
 
     // ── Karoserie ─────────────────────────────────────────────────────────
-    const hw = POLICE.WIDTH  / 2;
+    const hw = POLICE.WIDTH / 2;
     const hh = POLICE.HEIGHT / 2;
 
     // Zadní polovina — modrá (dolní z pohledu kamery = blíže hráči)
-    const bodyRear = this._createRect(
-      -hw, 0, POLICE.WIDTH, hh,
-      POLICE.COLOR_BODY_BLUE, 3
-    );
+    const bodyRear = this._createRect(-hw, 0, POLICE.WIDTH, hh, POLICE.COLOR_BODY_BLUE, 3);
     // Přední polovina — bílá
-    const bodyFront = this._createRect(
-      -hw, -hh, POLICE.WIDTH, hh,
-      POLICE.COLOR_BODY_WHITE, 3
-    );
+    const bodyFront = this._createRect(-hw, -hh, POLICE.WIDTH, hh, POLICE.COLOR_BODY_WHITE, 3);
 
     // Lightbar — modrý pruh přes střechu (horizontálně)
-    const barW = POLICE.WIDTH  * 0.80;
+    const barW = POLICE.WIDTH * 0.8;
     const barH = POLICE.HEIGHT * 0.12;
-    const bar  = this._createRect(
-      -barW / 2, -barH / 2,
-      barW, barH,
-      POLICE.COLOR_LIGHT_BAR, 2
-    );
+    const bar = this._createRect(-barW / 2, -barH / 2, barW, barH, POLICE.COLOR_LIGHT_BAR, 2);
 
     // Malá světla na lightbaru (2× červená, 2× modrá)
     const dotR = 3;
     const dotY = 0;
-    this._addLightDot(g, -barW / 2 + 6,  dotY, dotR, '#ff1a1a'); // červená L
+    this._addLightDot(g, -barW / 2 + 6, dotY, dotR, '#ff1a1a'); // červená L
     this._addLightDot(g, -barW / 2 + 14, dotY, dotR, '#1a8cff'); // modrá  L
-    this._addLightDot(g,  barW / 2 - 14, dotY, dotR, '#1a8cff'); // modrá  R
-    this._addLightDot(g,  barW / 2 - 6,  dotY, dotR, '#ff1a1a'); // červená R
+    this._addLightDot(g, barW / 2 - 14, dotY, dotR, '#1a8cff'); // modrá  R
+    this._addLightDot(g, barW / 2 - 6, dotY, dotR, '#ff1a1a'); // červená R
 
     // Přední světla
     const lightW = 7;
     const lightH = 3;
     const frontY = -hh + 4;
-    g.appendChild(this._createRect(-hw + 3,          frontY, lightW, lightH, '#ffffaa', 1));
-    g.appendChild(this._createRect( hw - lightW - 3, frontY, lightW, lightH, '#ffffaa', 1));
+    g.appendChild(this._createRect(-hw + 3, frontY, lightW, lightH, '#ffffaa', 1));
+    g.appendChild(this._createRect(hw - lightW - 3, frontY, lightW, lightH, '#ffffaa', 1));
 
     // Zadní světla
     const rearY = hh - lightH - 4;
-    g.appendChild(this._createRect(-hw + 3,          rearY, lightW, lightH, '#ff4444', 1));
-    g.appendChild(this._createRect( hw - lightW - 3, rearY, lightW, lightH, '#ff4444', 1));
+    g.appendChild(this._createRect(-hw + 3, rearY, lightW, lightH, '#ff4444', 1));
+    g.appendChild(this._createRect(hw - lightW - 3, rearY, lightW, lightH, '#ff4444', 1));
 
     // Nápis "POLICE" — malý text na kapotě
     const label = this._createElement('text');
@@ -194,7 +184,7 @@ class PoliceCar {
     const dot = this._createElement('circle');
     dot.setAttribute('cx', cx);
     dot.setAttribute('cy', cy);
-    dot.setAttribute('r',  r);
+    dot.setAttribute('r', r);
     dot.setAttribute('fill', fill);
     parent.appendChild(dot);
   }
@@ -232,7 +222,7 @@ class PoliceCar {
     // Pulzace radaru
     this._pulseTime += dt;
     const pulse = Math.sin(this._pulseTime * POLICE.PULSE_FREQUENCY * 2 * Math.PI);
-    const r     = this._baseRadarRadius() + pulse * POLICE.PULSE_AMPLITUDE;
+    const r = this._baseRadarRadius() + pulse * POLICE.PULSE_AMPLITUDE;
     this._radarCircle.setAttribute('r', r.toFixed(1));
 
     // Deaktivace po opuštění plátna
@@ -250,7 +240,7 @@ class PoliceCar {
     return {
       cx: this._cx,
       cy: this._cy,
-      r:  this._baseRadarRadius() + pulse * POLICE.PULSE_AMPLITUDE,
+      r: this._baseRadarRadius() + pulse * POLICE.PULSE_AMPLITUDE,
     };
   }
 
@@ -259,42 +249,56 @@ class PoliceCar {
    * @returns {{ x: number, y: number, width: number, height: number }}
    */
   getHitbox() {
-    const hw = POLICE.WIDTH  / 2;
+    const hw = POLICE.WIDTH / 2;
     const hh = POLICE.HEIGHT / 2;
     return {
-      x:      this._cx - hw,
-      y:      this._cy - hh,
-      width:  POLICE.WIDTH,
+      x: this._cx - hw,
+      y: this._cy - hh,
+      width: POLICE.WIDTH,
       height: POLICE.HEIGHT,
     };
   }
 
   /** Aktuální Y střed (pro spawn kontrolu). */
-  get cy() { return this._cy; }
+  get cy() {
+    return this._cy;
+  }
 
   /** Aktuální X střed. */
-  get cx() { return this._cx; }
+  get cx() {
+    return this._cx;
+  }
 
   /** Aktuální rychlost (px/s). */
-  get speed() { return this._speed; }
+  get speed() {
+    return this._speed;
+  }
 
   /** Výška karoserie (pro spawn kontrolu). */
-  get height() { return POLICE.HEIGHT; }
+  get height() {
+    return POLICE.HEIGHT;
+  }
 
   /** @returns {number} hmotnost úměrná ploše (pro kolizní impulzy) */
-  get mass() { return POLICE.WIDTH * POLICE.HEIGHT; }
+  get mass() {
+    return POLICE.WIDTH * POLICE.HEIGHT;
+  }
 
   /**
    * Přímo nastaví aktuální rychlost (kolizní přenos hybnosti).
    * @param {number} v
    */
-  setSpeed(v) { this._speed = Math.max(0, v); }
+  setSpeed(v) {
+    this._speed = Math.max(0, v);
+  }
 
   /**
    * Přidá boční rychlost (kolizní odraz do strany).
    * @param {number} dvx
    */
-  applyLateralImpulse(dvx) { this._vx += dvx; }
+  applyLateralImpulse(dvx) {
+    this._vx += dvx;
+  }
 
   /**
    * Posune vozidlo o daný offset (separace kolizí).

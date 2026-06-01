@@ -49,7 +49,9 @@ class PoliceManager {
   }
 
   /** Maximální počet aktivních policejních aut najednou. */
-  static get MAX_ACTIVE() { return 2; }
+  static get MAX_ACTIVE() {
+    return 2;
+  }
 
   /**
    * Vrátí pruhy volné od dopravního provozu blízko spawnu.
@@ -61,20 +63,22 @@ class PoliceManager {
 
     // Pruhy obsazené běžnými auty
     const trafficOccupied = new Set(
-      this._trafficManager.getCars()
-        .filter(car => car.cy - car.height / 2 < safeZone + 40)
-        .map(car => car.laneIndex)
+      this._trafficManager
+        .getCars()
+        .filter((car) => car.cy - car.height / 2 < safeZone + 40)
+        .map((car) => car.laneIndex),
     );
 
     // Pruhy obsazené jinými policisty
     const policeOccupied = new Set(
       this._cars
-        .filter(car => car.cy - POLICE.HEIGHT / 2 < safeZone + 40)
-        .map(car => car.laneIndex)
+        .filter((car) => car.cy - POLICE.HEIGHT / 2 < safeZone + 40)
+        .map((car) => car.laneIndex),
     );
 
-    return Array.from({ length: ROAD.LANE_COUNT }, (_, i) => i)
-      .filter(i => !trafficOccupied.has(i) && !policeOccupied.has(i));
+    return Array.from({ length: ROAD.LANE_COUNT }, (_, i) => i).filter(
+      (i) => !trafficOccupied.has(i) && !policeOccupied.has(i),
+    );
   }
 
   /** @private */
@@ -85,7 +89,7 @@ class PoliceManager {
     if (available.length === 0) return;
 
     const laneIndex = available[Math.floor(Math.random() * available.length)];
-    const startY    = -(POLICE.HEIGHT / 2) - 5;
+    const startY = -(POLICE.HEIGHT / 2) - 5;
 
     const car = new PoliceCar(this._svg, laneIndex, startY, roadSpeed);
     this._cars.push(car);
@@ -103,9 +107,9 @@ class PoliceManager {
       car.update(dt, roadSpeed);
     }
 
-    const inactive = this._cars.filter(c => !c.active);
+    const inactive = this._cars.filter((c) => !c.active);
     for (const car of inactive) car.remove();
-    this._cars = this._cars.filter(c => c.active);
+    this._cars = this._cars.filter((c) => c.active);
 
     this._spawnTimer -= dt;
     if (this._spawnTimer <= 0) {

@@ -17,8 +17,8 @@
 
 /** @enum {string} */
 const GameState = Object.freeze({
-  IDLE:      'idle',
-  RUNNING:   'running',
+  IDLE: 'idle',
+  RUNNING: 'running',
   GAME_OVER: 'game_over',
 });
 
@@ -38,10 +38,10 @@ class InputManager {
     this._enabled = false;
 
     this._boundKeyDown = this._onKeyDown.bind(this);
-    this._boundKeyUp   = this._onKeyUp.bind(this);
+    this._boundKeyUp = this._onKeyUp.bind(this);
 
     document.addEventListener('keydown', this._boundKeyDown);
-    document.addEventListener('keyup',   this._boundKeyUp);
+    document.addEventListener('keyup', this._boundKeyUp);
   }
 
   // ─── Privátní ──────────────────────────────────────────────────────────────
@@ -106,7 +106,7 @@ class InputManager {
   /** Odstraní event listenery. */
   destroy() {
     document.removeEventListener('keydown', this._boundKeyDown);
-    document.removeEventListener('keyup',   this._boundKeyUp);
+    document.removeEventListener('keyup', this._boundKeyUp);
   }
 }
 
@@ -152,7 +152,7 @@ class Game {
    */
   _loadSpriteAndInit() {
     const img = new Image();
-    img.onload  = () => this._init(img);
+    img.onload = () => this._init(img);
     img.onerror = () => {
       console.warn('[Game] Sprite player-car.png se nepodařilo načíst — použit SVG fallback.');
       this._init(null);
@@ -166,23 +166,22 @@ class Game {
    * @param {HTMLImageElement|null} spriteImg
    */
   _init(spriteImg) {
-
-    this._inputManager   = new InputManager();
-    this._road           = new Road(this._svg);
+    this._inputManager = new InputManager();
+    this._road = new Road(this._svg);
 
     // Skupina částic — nad silnicí, pod auty
-    this._particleGroup  = this._createParticleGroup();
+    this._particleGroup = this._createParticleGroup();
     this._particleSystem = new ParticleSystem(this._particleGroup);
 
-    this._playerCar      = new PlayerCar(this._svg, this._inputManager, spriteImg);
+    this._playerCar = new PlayerCar(this._svg, this._inputManager, spriteImg);
     this._trafficManager = new TrafficManager(this._svg);
-    this._policeManager  = new PoliceManager(this._svg, this._trafficManager);
-    this._coinManager    = new CoinManager(this._svg, this._trafficManager);
-    this._bonusManager   = new BonusManager(this._svg, this._trafficManager);
-    this._racerManager   = new RacerManager(this._svg);
-    this._scoreSystem    = new ScoreSystem();
-    this._leaderboard    = new Leaderboard();
-    this._hud            = new Hud();
+    this._policeManager = new PoliceManager(this._svg, this._trafficManager);
+    this._coinManager = new CoinManager(this._svg, this._trafficManager);
+    this._bonusManager = new BonusManager(this._svg, this._trafficManager);
+    this._racerManager = new RacerManager(this._svg);
+    this._scoreSystem = new ScoreSystem();
+    this._leaderboard = new Leaderboard();
+    this._hud = new Hud();
 
     // Hráčovo auto musí být vždy nad ostatními objekty
     this._svg.appendChild(this._playerCar.svgGroup);
@@ -202,7 +201,14 @@ class Game {
     this._btnMute = document.getElementById('btn-mute');
     if (this._btnMute) {
       this._btnMute.addEventListener('click', () => this._toggleMute());
-      this._btnMute.addEventListener('touchstart', (e) => { e.preventDefault(); this._toggleMute(); }, { passive: false });
+      this._btnMute.addEventListener(
+        'touchstart',
+        (e) => {
+          e.preventDefault();
+          this._toggleMute();
+        },
+        { passive: false },
+      );
     }
 
     // Zobrazení úvodní obrazovky
@@ -243,7 +249,7 @@ class Game {
    */
   _registerMobileControls() {
     const bindings = [
-      { id: 'btn-up',   key: 'ArrowUp'   },
+      { id: 'btn-up', key: 'ArrowUp' },
       { id: 'btn-down', key: 'ArrowDown' },
     ];
 
@@ -251,16 +257,22 @@ class Game {
       const btn = document.getElementById(id);
       if (!btn) continue;
 
-      const onPress   = (e) => { e.preventDefault(); this._inputManager.press(key);   };
-      const onRelease = (e) => { e.preventDefault(); this._inputManager.release(key); };
+      const onPress = (e) => {
+        e.preventDefault();
+        this._inputManager.press(key);
+      };
+      const onRelease = (e) => {
+        e.preventDefault();
+        this._inputManager.release(key);
+      };
 
-      btn.addEventListener('touchstart', onPress,   { passive: false });
-      btn.addEventListener('touchend',   onRelease, { passive: false });
-      btn.addEventListener('touchcancel',onRelease, { passive: false });
+      btn.addEventListener('touchstart', onPress, { passive: false });
+      btn.addEventListener('touchend', onRelease, { passive: false });
+      btn.addEventListener('touchcancel', onRelease, { passive: false });
 
       // Fallback myš
-      btn.addEventListener('mousedown',  onPress);
-      btn.addEventListener('mouseup',    onRelease);
+      btn.addEventListener('mousedown', onPress);
+      btn.addEventListener('mouseup', onRelease);
       btn.addEventListener('mouseleave', onRelease);
     }
   }
@@ -277,28 +289,36 @@ class Game {
     let startX = 0;
     let startY = 0;
 
-    this._svg.addEventListener('touchstart', (e) => {
-      // Ignoruj dotyky na tlačítkách (controls panel)
-      if (e.target.closest && e.target.closest('#controls')) return;
-      const t = e.changedTouches[0];
-      startX = t.clientX;
-      startY = t.clientY;
-    }, { passive: true });
+    this._svg.addEventListener(
+      'touchstart',
+      (e) => {
+        // Ignoruj dotyky na tlačítkách (controls panel)
+        if (e.target.closest && e.target.closest('#controls')) return;
+        const t = e.changedTouches[0];
+        startX = t.clientX;
+        startY = t.clientY;
+      },
+      { passive: true },
+    );
 
-    this._svg.addEventListener('touchend', (e) => {
-      if (this._state !== GameState.RUNNING) return;
-      const t = e.changedTouches[0];
-      const dx = t.clientX - startX;
-      const dy = t.clientY - startY;
+    this._svg.addEventListener(
+      'touchend',
+      (e) => {
+        if (this._state !== GameState.RUNNING) return;
+        const t = e.changedTouches[0];
+        const dx = t.clientX - startX;
+        const dy = t.clientY - startY;
 
-      if (Math.abs(dx) < SWIPE_THRESHOLD) return;
-      if (Math.abs(dx) <= Math.abs(dy)) return; // spíše vertikální gesto
+        if (Math.abs(dx) < SWIPE_THRESHOLD) return;
+        if (Math.abs(dx) <= Math.abs(dy)) return; // spíše vertikální gesto
 
-      const key = dx > 0 ? 'ArrowRight' : 'ArrowLeft';
-      this._inputManager.press(key);
-      // Okamžité uvolnění — edge trigger v playerCar zpracuje jako jedno přeskočení pruhu
-      requestAnimationFrame(() => this._inputManager.release(key));
-    }, { passive: true });
+        const key = dx > 0 ? 'ArrowRight' : 'ArrowLeft';
+        this._inputManager.press(key);
+        // Okamžité uvolnění — edge trigger v playerCar zpracuje jako jedno přeskočení pruhu
+        requestAnimationFrame(() => this._inputManager.release(key));
+      },
+      { passive: true },
+    );
   }
 
   // ─── Stavový stroj ───────────────────────────────────────────────────────────
@@ -308,9 +328,9 @@ class Game {
     if (this._state === GameState.IDLE || this._state === GameState.GAME_OVER) {
       // start() je async (AudioContext.resume + decodeAudioData) —
       // hru spustíme ihned, zvuk nastartuje souběžně
-      this._audioEngine.start().catch(err =>
-        console.warn('[Game] AudioEngine start failed:', err)
-      );
+      this._audioEngine
+        .start()
+        .catch((err) => console.warn('[Game] AudioEngine start failed:', err));
       this._startGame();
     }
   }
@@ -335,7 +355,7 @@ class Game {
     const ok = await this._leaderboard.saveScore(
       name,
       this._scoreSystem.finalSeconds,
-      this._scoreSystem.coinCount
+      this._scoreSystem.coinCount,
     );
     this._hud.setScoreSaveStatus(ok ? 'ok' : 'err');
   }
@@ -345,7 +365,7 @@ class Game {
    * @private
    */
   async _handleLeaderboardClick() {
-    this._hud.showLeaderboard([]);  // okamžitě otevři s prázdným stavem
+    this._hud.showLeaderboard([]); // okamžitě otevři s prázdným stavem
     const entries = await this._leaderboard.getTopScores();
     this._hud.showLeaderboard(entries);
   }
@@ -368,8 +388,8 @@ class Game {
    * @private
    */
   _startGame() {
-    this._state         = GameState.RUNNING;
-    this._speed         = PHYSICS.SPEED_INITIAL;
+    this._state = GameState.RUNNING;
+    this._speed = PHYSICS.SPEED_INITIAL;
     this._lastTimestamp = null;
 
     /** @private — zbývající čas anti-radar bonusu (s), 0 = neaktivní */
@@ -385,7 +405,7 @@ class Game {
     this._racerManager.reset();
     this._scoreSystem.reset();
     this._particleSystem.reset();
-    this._brakeHeldTime  = 0;
+    this._brakeHeldTime = 0;
     this._antiRadarTimer = 0;
 
     this._inputManager.setEnabled(true);
@@ -410,9 +430,7 @@ class Game {
     cancelAnimationFrame(this._rafHandle);
     this._audioEngine.stop();
 
-    const bustedSpeedKmh = busted
-      ? Math.round(this._speed * PHYSICS.PX_PER_S_TO_KMH)
-      : 0;
+    const bustedSpeedKmh = busted ? Math.round(this._speed * PHYSICS.PX_PER_S_TO_KMH) : 0;
 
     this._hud.showGameOver(
       this._scoreSystem.finalSeconds,
@@ -420,7 +438,7 @@ class Game {
       this._scoreSystem.coinCount,
       busted,
       bustedSpeedKmh,
-      finished
+      finished,
     );
   }
 
@@ -473,7 +491,13 @@ class Game {
     this._bonusManager.update(dt, this._speed);
 
     // 6c. Závodní soupeři
-    this._racerManager.update(dt, this._speed, this._trafficManager.getCars(), this._playerCar, this._policeManager.getCars());
+    this._racerManager.update(
+      dt,
+      this._speed,
+      this._trafficManager.getCars(),
+      this._playerCar,
+      this._policeManager.getCars(),
+    );
 
     // 6d. Vzájemné kolize všech aut (traffic, police, racer) — zabrání průniku
     CollisionSystem.resolveVehicleSeparation([
@@ -485,7 +509,7 @@ class Game {
     // 7. Kolize — mince
     const coinResult = CollisionSystem.checkPlayerVsCoins(
       this._playerCar,
-      this._coinManager.getCoins()
+      this._coinManager.getCoins(),
     );
     if (coinResult.count > 0) {
       this._scoreSystem.addCoins(coinResult.count);
@@ -497,13 +521,16 @@ class Game {
     // 7b. Kolize — bonusy
     const bonusResult = CollisionSystem.checkPlayerVsBonuses(
       this._playerCar,
-      this._bonusManager.getBonuses()
+      this._bonusManager.getBonuses(),
     );
     for (const bonus of bonusResult.collected) {
       if (bonus.type === BonusType.ANTI_RADAR) {
         this._antiRadarTimer = bonus.duration;
         this._particleSystem.spawnCoinBurst(
-          ...(() => { const h = this._playerCar.getHitbox(); return [h.x + h.width / 2, h.y + h.height / 2]; })()
+          ...(() => {
+            const h = this._playerCar.getHitbox();
+            return [h.x + h.width / 2, h.y + h.height / 2];
+          })(),
         );
       }
     }
@@ -521,7 +548,7 @@ class Game {
         ...this._policeManager.getCars(),
         ...this._racerManager.getRacers(),
       ],
-      this._speed
+      this._speed,
     );
 
     // 9. Cíl závodu — dojetí cílové vzdálenosti
@@ -532,13 +559,14 @@ class Game {
 
     // 10. Kolize — radar policejního auta při vysoké rychlosti (busted)
     // Anti-radar bonus potlačuje detekci radaru
-    const busted = this._antiRadarTimer <= 0
-      ? CollisionSystem.checkPlayerVsPoliceRadar(
-          this._playerCar,
-          this._policeManager.getCars(),
-          this._speed
-        )
-      : null;
+    const busted =
+      this._antiRadarTimer <= 0
+        ? CollisionSystem.checkPlayerVsPoliceRadar(
+            this._playerCar,
+            this._policeManager.getCars(),
+            this._speed,
+          )
+        : null;
     if (busted !== null) {
       this._endGame(true);
       return;
@@ -556,16 +584,12 @@ class Game {
     this._hud.update(
       this._scoreSystem.elapsedSeconds,
       this._scoreSystem.distanceMeters,
-      this._speed
+      this._speed,
     );
     this._hud.updateAntiRadar(this._antiRadarTimer);
 
     // 14. Zvukový engine
-    this._audioEngine.update(
-      this._speed,
-      this._inputManager.isAccelerating(),
-      dt
-    );
+    this._audioEngine.update(this._speed, this._inputManager.isAccelerating(), dt);
   }
 
   /**
@@ -575,7 +599,7 @@ class Game {
    */
   _spawnBrakeSmokeEffect(dt) {
     const hitbox = this._playerCar.getHitbox();
-    const x = hitbox.x + hitbox.width  / 2;
+    const x = hitbox.x + hitbox.width / 2;
     const y = hitbox.y + hitbox.height;
     this._particleSystem.spawnBrakeSmoke(x, y, dt);
   }
@@ -600,13 +624,11 @@ class Game {
       // Exponenciální model: dv/dt = (ACCEL_VMAX - v) / ACCEL_TAU
       // Kalibrováno: 0→100 km/h za 3.5s, 0→200 km/h za 10s
       this._speed += ((PHYSICS.ACCEL_VMAX - this._speed) / PHYSICS.ACCEL_TAU) * dt;
-
     } else if (this._inputManager.isBraking()) {
       this._brakeHeldTime += dt;
 
       const decel = this._calcBrakeDeceleration(this._brakeHeldTime);
       this._speed -= decel * dt;
-
     } else {
       // Uvolnění brzdy — reset akumulátoru
       this._brakeHeldTime = 0;
@@ -631,10 +653,7 @@ class Game {
     }
 
     // Normalizovaný čas v rampup fázi [0, 1]
-    const t = Math.min(
-      (heldTime - BRAKE_RAMPUP_START) / BRAKE_RAMPUP_DURATION,
-      1
-    );
+    const t = Math.min((heldTime - BRAKE_RAMPUP_START) / BRAKE_RAMPUP_DURATION, 1);
 
     // Kvadratický nárůst: pomalý start, rychlý konec
     return DECELERATION + (DECELERATION_MAX - DECELERATION) * (t * t);

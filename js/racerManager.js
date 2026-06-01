@@ -36,7 +36,7 @@ class RacerManager {
   /** @private */
   _spawnRacer(roadSpeed, startY = -65) {
     const laneIndex = Math.floor(Math.random() * ROAD.LANE_COUNT);
-    const racer  = new RacerCar(this._svg, laneIndex, startY, roadSpeed);
+    const racer = new RacerCar(this._svg, laneIndex, startY, roadSpeed);
     this._racers.push(racer);
   }
 
@@ -58,9 +58,9 @@ class RacerManager {
     }
 
     // Odstranění neaktivních
-    const inactive = this._racers.filter(r => !r.active);
+    const inactive = this._racers.filter((r) => !r.active);
     for (const r of inactive) r.remove();
-    this._racers = this._racers.filter(r => r.active);
+    this._racers = this._racers.filter((r) => r.active);
 
     // Spawn logika — jen pokud hráč jede rychle a máme místo (max 1 racer)
     if (playerKmh > 130 && this._racers.length < 1) {
@@ -86,7 +86,7 @@ class RacerManager {
    */
   reset(roadSpeed = PHYSICS.SPEED_INITIAL) {
     for (const r of this._racers) r.remove();
-    this._racers     = [];
+    this._racers = [];
     this._spawnTimer = this._nextInterval();
     // Úvodní racer uprostřed plochy před hráčem
     this._spawnRacer(roadSpeed, CANVAS.HEIGHT * 0.5);

@@ -9,7 +9,7 @@
  */
 
 const LEADERBOARD_COLLECTION = 'leaderboard';
-const LEADERBOARD_TOP_N      = 10;
+const LEADERBOARD_TOP_N = 10;
 
 class Leaderboard {
   constructor() {
@@ -33,10 +33,10 @@ class Leaderboard {
     try {
       const { collection, addDoc } = window._fbFirestore;
       await addDoc(collection(this._db, LEADERBOARD_COLLECTION), {
-        name:  name.trim().slice(0, 20) || 'Hráč',
+        name: name.trim().slice(0, 20) || 'Hráč',
         time,
         coins,
-        date:  Date.now(),
+        date: Date.now(),
       });
       return true;
     } catch (err) {
@@ -54,13 +54,13 @@ class Leaderboard {
     if (!this._db) return [];
     try {
       const { collection, query, orderBy, limit, getDocs } = window._fbFirestore;
-      const q    = query(
+      const q = query(
         collection(this._db, LEADERBOARD_COLLECTION),
         orderBy('time', 'asc'),
-        limit(LEADERBOARD_TOP_N)
+        limit(LEADERBOARD_TOP_N),
       );
       const snap = await getDocs(q);
-      return snap.docs.map(doc => doc.data());
+      return snap.docs.map((doc) => doc.data());
     } catch (err) {
       console.error('[Leaderboard] Chyba při načítání:', err);
       return [];

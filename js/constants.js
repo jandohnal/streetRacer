@@ -9,22 +9,22 @@
 // ─── Rozměry herní plochy ────────────────────────────────────────────────────
 
 const CANVAS = Object.freeze({
-  WIDTH:  400,
-  HEIGHT: 711,   // 400 × (16/9) ≈ 711
+  WIDTH: 400,
+  HEIGHT: 711, // 400 × (16/9) ≈ 711
 });
 
 // ─── Silnice a pruhy ─────────────────────────────────────────────────────────
 
 const ROAD = Object.freeze({
-  LANE_COUNT:       6,
-  SHOULDER_WIDTH:   18,   // px — krajnice vlevo/vpravo
-  LANE_LINE_WIDTH:  2,    // px — přerušovaná čára pruhu
-  LANE_LINE_DASH:   40,   // px — délka čárky
-  LANE_LINE_GAP:    30,   // px — mezera čárky
+  LANE_COUNT: 6,
+  SHOULDER_WIDTH: 18, // px — krajnice vlevo/vpravo
+  LANE_LINE_WIDTH: 2, // px — přerušovaná čára pruhu
+  LANE_LINE_DASH: 40, // px — délka čárky
+  LANE_LINE_GAP: 30, // px — mezera čárky
   SHOULDER_LINE_WIDTH: 3, // px — plná krajnicová čára
-  SURFACE_COLOR:    '#3a3a3a',
-  SHOULDER_COLOR:   '#2a2a2a',
-  LANE_LINE_COLOR:  '#ffffff',
+  SURFACE_COLOR: '#3a3a3a',
+  SHOULDER_COLOR: '#2a2a2a',
+  LANE_LINE_COLOR: '#ffffff',
   SHOULDER_LINE_COLOR: '#e8c842',
 });
 
@@ -33,20 +33,21 @@ const LANE_WIDTH = (CANVAS.WIDTH - ROAD.SHOULDER_WIDTH * 2) / ROAD.LANE_COUNT;
 
 /** X souřadnice středů jednotlivých pruhů (index 0 = nejlevější) */
 const LANE_CENTERS = Object.freeze(
-  Array.from({ length: ROAD.LANE_COUNT }, (_, i) =>
-    ROAD.SHOULDER_WIDTH + i * LANE_WIDTH + LANE_WIDTH / 2
-  )
+  Array.from(
+    { length: ROAD.LANE_COUNT },
+    (_, i) => ROAD.SHOULDER_WIDTH + i * LANE_WIDTH + LANE_WIDTH / 2,
+  ),
 );
 
 // ─── Fyzika / rychlost ───────────────────────────────────────────────────────
 
 const PHYSICS = Object.freeze({
   /** Počáteční rychlost při startu hry (px/s) */
-  SPEED_INITIAL:      290,
+  SPEED_INITIAL: 290,
   /** Minimální rychlost — odpovídá 20 km/h zobrazených hráči (px/s) */
-  SPEED_MIN:           75,
+  SPEED_MIN: 75,
   /** Maximální rychlost — odpovídá 320 km/h zobrazených hráči (px/s) */
-  SPEED_MAX:         1200,
+  SPEED_MAX: 1200,
   /**
    * Exponenciální model akcelerace při držení ↑:
    *   dv/dt = (ACCEL_VMAX - v) / ACCEL_TAU
@@ -54,15 +55,15 @@ const PHYSICS = Object.freeze({
    * ACCEL_VMAX = efektivní asymptotická rychlost modelu (px/s)
    * ACCEL_TAU  = časová konstanta (s)
    */
-  ACCEL_VMAX:        1037,
-  ACCEL_TAU:          7.8,
+  ACCEL_VMAX: 1037,
+  ACCEL_TAU: 7.8,
   /** Základní zpomalení při držení ↓ — první fáze brzdění (px/s²) */
-  DECELERATION:       500,
+  DECELERATION: 500,
   /**
    * Maximální zpomalení při plném brzdění — kvadratická fáze (px/s²).
    * Dosaženo po BRAKE_RAMPUP_TIME sekundách nepřetržitého brzdění.
    */
-  DECELERATION_MAX:  1800,
+  DECELERATION_MAX: 1800,
   /**
    * Doba (s), po které začne brzdný účinek kvadraticky růst.
    * Do této doby se používá základní DECELERATION.
@@ -74,44 +75,44 @@ const PHYSICS = Object.freeze({
    */
   BRAKE_RAMPUP_DURATION: 1.2,
   /** Přirozený odpor — pasivní pokles rychlosti bez vstupu (px/s²) */
-  DRAG:                60,
+  DRAG: 60,
   /**
    * Koeficient konverze px/s → km/h (vizuální).
    * Kalibrováno: SPEED_MAX (1200 px/s) = 320 km/h → 320/1200 ≈ 0.2667
    */
-  PX_PER_S_TO_KMH:    0.2667,
+  PX_PER_S_TO_KMH: 0.2667,
   /**
    * Kolik herních px odpovídá 1 metru vzdálenosti.
    * Odvozeno z PX_PER_S_TO_KMH:
    *   1 px/s = PX_PER_S_TO_KMH km/h = PX_PER_S_TO_KMH × (1000/3600) m/s
    *   → 1 m = 1 / (PX_PER_S_TO_KMH × 1000/3600)  px/m ≈ 13.5 px/m
    */
-  PX_PER_METER: 1 / (0.2667 * 1000 / 3600),
+  PX_PER_METER: 1 / ((0.2667 * 1000) / 3600),
 });
 
 // ─── Hráčovo auto ────────────────────────────────────────────────────────────
 
 const PLAYER = Object.freeze({
-  WIDTH:       54,
-  HEIGHT:      90,
+  WIDTH: 54,
+  HEIGHT: 90,
   /** Y souřadnice středu auta (90 % výšky plátna) */
-  Y_CENTER:    Math.round(CANVAS.HEIGHT * 0.88),
-  START_LANE:  2,   // index pruhu (0–5), prostřední levý z dvojice 2/3
-  COLOR_BODY:  '#27ae60',
-  COLOR_ROOF:  '#1a7a42',
+  Y_CENTER: Math.round(CANVAS.HEIGHT * 0.88),
+  START_LANE: 2, // index pruhu (0–5), prostřední levý z dvojice 2/3
+  COLOR_BODY: '#27ae60',
+  COLOR_ROOF: '#1a7a42',
   COLOR_LIGHT_FRONT: '#ffffaa',
-  COLOR_LIGHT_REAR:  '#cc0000',
+  COLOR_LIGHT_REAR: '#cc0000',
   /** Hitbox je zmenšen na X % karoserie pro fair-play */
-  HITBOX_FACTOR: 0.80,
+  HITBOX_FACTOR: 0.8,
 });
 
 // ─── Typy dopravních aut ─────────────────────────────────────────────────────
 
 /** @enum {string} */
 const VehicleType = Object.freeze({
-  CAR:   'car',
-  VAN:   'van',
-  BUS:   'bus',
+  CAR: 'car',
+  VAN: 'van',
+  BUS: 'bus',
   TRUCK: 'truck',
 });
 
@@ -122,69 +123,67 @@ const VehicleType = Object.freeze({
  */
 const VEHICLE_DEFS = Object.freeze({
   [VehicleType.CAR]: {
-    width:        38,
-    height:       65,
-    speedMin:     0.35,
-    speedMax:     0.65,
-    maxSpeedKmh:  130,
-    spawnWeight:  50,
+    width: 38,
+    height: 65,
+    speedMin: 0.35,
+    speedMax: 0.65,
+    maxSpeedKmh: 130,
+    spawnWeight: 50,
     colors: ['#e74c3c', '#3498db', '#ecf0f1', '#95a5a6', '#f39c12', '#8e44ad'],
-    roofColor:    null,   // null = vypočítá se ztmavením těla
+    roofColor: null, // null = vypočítá se ztmavením těla
   },
   [VehicleType.VAN]: {
-    width:        42,
-    height:       90,
-    speedMin:     0.30,
-    speedMax:     0.55,
-    maxSpeedKmh:  110,
-    spawnWeight:  3,
+    width: 42,
+    height: 90,
+    speedMin: 0.3,
+    speedMax: 0.55,
+    maxSpeedKmh: 110,
+    spawnWeight: 3,
     colors: ['#ecf0f1', '#f1c40f', '#95a5a6', '#e67e22'],
-    roofColor:    null,
+    roofColor: null,
   },
   [VehicleType.BUS]: {
-    width:        44,
-    height:      130,
-    speedMin:     0.25,
-    speedMax:     0.45,
-    maxSpeedKmh:  100,
-    spawnWeight:  1,
+    width: 44,
+    height: 130,
+    speedMin: 0.25,
+    speedMax: 0.45,
+    maxSpeedKmh: 100,
+    spawnWeight: 1,
     colors: ['#e67e22', '#f1c40f', '#27ae60'],
-    roofColor:    null,
+    roofColor: null,
   },
   [VehicleType.TRUCK]: {
-    width:        44,
-    height:      150,
-    speedMin:     0.20,
-    speedMax:     0.40,
-    maxSpeedKmh:  80,
-    spawnWeight:  10,
+    width: 44,
+    height: 150,
+    speedMin: 0.2,
+    speedMax: 0.4,
+    maxSpeedKmh: 80,
+    spawnWeight: 10,
     colors: ['#2c3e50', '#27ae60', '#7f8c8d', '#c0392b'],
-    roofColor:   null,
+    roofColor: null,
   },
 });
 
 /** Pole typů vozidel, kde každý je zastoupen dle spawnWeight */
 const VEHICLE_SPAWN_POOL = Object.freeze(
-  Object.entries(VEHICLE_DEFS).flatMap(([type, def]) =>
-    Array(def.spawnWeight).fill(type)
-  )
+  Object.entries(VEHICLE_DEFS).flatMap(([type, def]) => Array(def.spawnWeight).fill(type)),
 );
 
 // ─── Spawn ───────────────────────────────────────────────────────────────────
 
 const SPAWN = Object.freeze({
   /** Základní interval spawnu v sekundách */
-  INTERVAL_BASE:   0.6,
+  INTERVAL_BASE: 0.6,
   /** Minimální interval spawnu (s) */
-  INTERVAL_MIN:    0.25,
+  INTERVAL_MIN: 0.25,
   /** O kolik se zkrátí interval na každých 100 px/s nad počáteční rychlost */
-  INTERVAL_STEP:   0.1,
+  INTERVAL_STEP: 0.1,
   /** Pravděpodobnost spawnu mince místo auta (0–1) */
-  COIN_CHANCE:     0.18,
+  COIN_CHANCE: 0.18,
   /** Bezpečná Y vzdálenost pro nový spawn (aby se objekty nepřekrývaly) */
-  SAFE_GAP:        12,
+  SAFE_GAP: 12,
   /** Maximální počet aut spawnutých najednou v jednom cyklu (více pruhů) */
-  MAX_PER_SPAWN:   3,
+  MAX_PER_SPAWN: 3,
   /**
    * Násobitel výšky předního auta — pokud je mezera mezi auty menší než
    * (výška předního auta × FOLLOW_GAP_FACTOR), zadní přizpůsobí rychlost.
@@ -195,13 +194,13 @@ const SPAWN = Object.freeze({
 // ─── Mince ───────────────────────────────────────────────────────────────────
 
 const COIN = Object.freeze({
-  RADIUS:       12,
-  COLOR_FILL:   '#FFD700',
+  RADIUS: 12,
+  COLOR_FILL: '#FFD700',
   COLOR_STROKE: '#cc9900',
-  STROKE_WIDTH:  2,
-  INNER_RADIUS:  7,
-  INNER_COLOR:  '#ffec6e',
-  SCORE_VALUE:   5,
+  STROKE_WIDTH: 2,
+  INNER_RADIUS: 7,
+  INNER_COLOR: '#ffec6e',
+  SCORE_VALUE: 5,
 });
 
 // ─── Skóre ───────────────────────────────────────────────────────────────────
@@ -223,11 +222,11 @@ const RACE = Object.freeze({
 
 const POLICE = Object.freeze({
   /** Rozměry karoserie — stejná třída jako osobní auto */
-  WIDTH:  38,
+  WIDTH: 38,
   HEIGHT: 65,
 
   /** Rychlostní faktor — policie jede pomaleji než hráč */
-  SPEED_FACTOR_MIN: 0.30,
+  SPEED_FACTOR_MIN: 0.3,
   SPEED_FACTOR_MAX: 0.55,
 
   /** Spawn váha v celkovém traffic poolu */
@@ -235,19 +234,19 @@ const POLICE = Object.freeze({
 
   /** Barvy karoserie (bílo-modrá kombinace) */
   COLOR_BODY_WHITE: '#f0f0f0',
-  COLOR_BODY_BLUE:  '#1a4fa0',
-  COLOR_ROOF:       '#0d2d5e',
-  COLOR_LIGHT_BAR:  '#1565c0',
+  COLOR_BODY_BLUE: '#1a4fa0',
+  COLOR_ROOF: '#0d2d5e',
+  COLOR_LIGHT_BAR: '#1565c0',
 
   /**
    * Poloměr "radaru" — zóna zachycení kolem policejního auta.
    * Krytí 2 pruhů na každou stranu → průměr = 4 × LANE_WIDTH → r = 2 × LANE_WIDTH.
    * Hodnota se dopočítává dynamicky v policeCar.js z LANE_WIDTH.
    */
-  RADAR_OPACITY:      0.45,
-  RADAR_COLOR:        '#5bb8ff',
-  RADAR_STROKE:       '#2196f3',
-  RADAR_STROKE_WIDTH:  1.5,
+  RADAR_OPACITY: 0.45,
+  RADAR_COLOR: '#5bb8ff',
+  RADAR_STROKE: '#2196f3',
+  RADAR_STROKE_WIDTH: 1.5,
 
   /**
    * Rychlostní limit pro chycení v km/h.
@@ -312,10 +311,10 @@ const AUDIO = Object.freeze({
    *    5    | 220–320 | 825–1200  | high (8000 RPM)
    */
   GEAR_DEFS: Object.freeze([
-    { speedLow:   0, speedHigh:  281, rateStart: 0.80, rateEnd: 1.10 },
-    { speedLow: 281, speedHigh:  450, rateStart: 0.85, rateEnd: 1.05 },
-    { speedLow: 450, speedHigh:  638, rateStart: 0.82, rateEnd: 1.05 },
-    { speedLow: 638, speedHigh:  825, rateStart: 0.83, rateEnd: 1.05 },
+    { speedLow: 0, speedHigh: 281, rateStart: 0.8, rateEnd: 1.1 },
+    { speedLow: 281, speedHigh: 450, rateStart: 0.85, rateEnd: 1.05 },
+    { speedLow: 450, speedHigh: 638, rateStart: 0.82, rateEnd: 1.05 },
+    { speedLow: 638, speedHigh: 825, rateStart: 0.83, rateEnd: 1.05 },
     { speedLow: 825, speedHigh: 1200, rateStart: 0.85, rateEnd: 1.05 },
   ]),
 
@@ -340,17 +339,17 @@ const AUDIO = Object.freeze({
   DECEL_PITCH_OFFSET: -0.06,
 
   /** Hlasitost master gain (engine vrstvy low/mid/high) */
-  MASTER_VOLUME:      0.8,
+  MASTER_VOLUME: 0.8,
 
   /** Hlasitost blowoff one-shotu */
-  BLOWOFF_VOLUME:     0.65,
+  BLOWOFF_VOLUME: 0.65,
 
   /** Hlasitost turbo one-shotu (momentálně nevyužito) */
-  TURBO_VOLUME:       0.45,
+  TURBO_VOLUME: 0.45,
 
   /** Minimální doba držení plynu (s) pro spuštění blowoff */
   TURBO_THROTTLE_MIN: 1.0,
 
   /** Délka fade-out při zastavení enginu (s) */
-  FADE_OUT_TIME:      0.4,
+  FADE_OUT_TIME: 0.4,
 });

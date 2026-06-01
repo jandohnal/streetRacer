@@ -14,7 +14,7 @@
 /** @enum {string} */
 const ParticleShape = Object.freeze({
   CIRCLE: 'circle',
-  RING:   'ring',   // kruh bez výplně (jen stroke) — ripple efekt
+  RING: 'ring', // kruh bez výplně (jen stroke) — ripple efekt
 });
 
 class Particle {
@@ -37,18 +37,18 @@ class Particle {
     /** @private */
     this._group = group;
 
-    this._x          = config.x;
-    this._y          = config.y;
-    this._vx         = config.vx;
-    this._vy         = config.vy;
-    this._lifetime   = config.lifetime;
-    this._elapsed    = 0;
-    this._radius     = config.radius;
-    this._radiusEnd  = config.radiusEnd  ?? config.radius;
-    this._color      = config.color;
-    this._opacity    = config.opacity    ?? 1;
+    this._x = config.x;
+    this._y = config.y;
+    this._vx = config.vx;
+    this._vy = config.vy;
+    this._lifetime = config.lifetime;
+    this._elapsed = 0;
+    this._radius = config.radius;
+    this._radiusEnd = config.radiusEnd ?? config.radius;
+    this._color = config.color;
+    this._opacity = config.opacity ?? 1;
     this._opacityEnd = config.opacityEnd ?? 0;
-    this._shape      = config.shape      ?? ParticleShape.CIRCLE;
+    this._shape = config.shape ?? ParticleShape.CIRCLE;
 
     /** @type {boolean} */
     this.active = true;
@@ -65,8 +65,8 @@ class Particle {
   _createElement() {
     const el = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
     if (this._shape === ParticleShape.RING) {
-      el.setAttribute('fill',         'none');
-      el.setAttribute('stroke',       this._color);
+      el.setAttribute('fill', 'none');
+      el.setAttribute('stroke', this._color);
       el.setAttribute('stroke-width', '1.5');
     } else {
       el.setAttribute('fill', this._color);
@@ -80,12 +80,12 @@ class Particle {
    * @param {number} t - Normalizovaný čas [0, 1].
    */
   _applyState(t) {
-    const r       = this._radius + (this._radiusEnd  - this._radius)      * t;
-    const opacity = this._opacity + (this._opacityEnd - this._opacity)    * t;
+    const r = this._radius + (this._radiusEnd - this._radius) * t;
+    const opacity = this._opacity + (this._opacityEnd - this._opacity) * t;
 
-    this._el.setAttribute('cx',      this._x.toFixed(1));
-    this._el.setAttribute('cy',      this._y.toFixed(1));
-    this._el.setAttribute('r',       Math.max(0, r).toFixed(1));
+    this._el.setAttribute('cx', this._x.toFixed(1));
+    this._el.setAttribute('cy', this._y.toFixed(1));
+    this._el.setAttribute('r', Math.max(0, r).toFixed(1));
     this._el.setAttribute('opacity', Math.max(0, opacity).toFixed(3));
   }
 

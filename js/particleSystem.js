@@ -38,7 +38,9 @@ class ParticleSystem {
   }
 
   /** Maximální počet živých částic najednou. */
-  static get MAX_PARTICLES() { return 120; }
+  static get MAX_PARTICLES() {
+    return 120;
+  }
 
   // ─── Privátní ────────────────────────────────────────────────────────────────
 
@@ -91,22 +93,22 @@ class ParticleSystem {
       const wheelOffsets = [-PLAYER.WIDTH * 0.38, PLAYER.WIDTH * 0.38];
 
       for (const offsetX of wheelOffsets) {
-        const angle   = this._rand(Math.PI * 0.55, Math.PI * 0.95); // dozadu + do stran
-        const speed   = this._rand(18, 55);
-        const scatter = this._rand(-0.4, 0.4);     // laterální rozptyl
+        const angle = this._rand(Math.PI * 0.55, Math.PI * 0.95); // dozadu + do stran
+        const speed = this._rand(18, 55);
+        const scatter = this._rand(-0.4, 0.4); // laterální rozptyl
 
         this._addParticle({
-          x:          x + offsetX + this._rand(-3, 3),
-          y:          y + this._rand(-2, 4),
-          vx:         Math.cos(angle + scatter) * speed,
-          vy:         Math.sin(angle) * speed,
-          lifetime:   this._rand(0.38, 0.68),
-          radius:     this._rand(3, 5),
-          radiusEnd:  this._rand(8, 14),
-          color:      this._rand(0, 1) > 0.5 ? '#cccccc' : '#aaaaaa',
-          opacity:    this._rand(0.45, 0.65),
+          x: x + offsetX + this._rand(-3, 3),
+          y: y + this._rand(-2, 4),
+          vx: Math.cos(angle + scatter) * speed,
+          vy: Math.sin(angle) * speed,
+          lifetime: this._rand(0.38, 0.68),
+          radius: this._rand(3, 5),
+          radiusEnd: this._rand(8, 14),
+          color: this._rand(0, 1) > 0.5 ? '#cccccc' : '#aaaaaa',
+          opacity: this._rand(0.45, 0.65),
           opacityEnd: 0,
-          shape:      ParticleShape.CIRCLE,
+          shape: ParticleShape.CIRCLE,
         });
       }
     }
@@ -132,17 +134,17 @@ class ParticleSystem {
       const jitter = this._rand(-0.25, 0.25);
 
       this._addParticle({
-        x:          x,
-        y:          y,
-        vx:         Math.cos(angle + jitter) * speed,
-        vy:         Math.sin(angle + jitter) * speed,
-        lifetime:   this._rand(0.28, 0.45),
-        radius:     this._rand(3.5, 5.5),
-        radiusEnd:  0,
-        color:      this._rand(0, 1) > 0.4 ? '#FFD700' : '#ffec6e',
-        opacity:    1,
+        x: x,
+        y: y,
+        vx: Math.cos(angle + jitter) * speed,
+        vy: Math.sin(angle + jitter) * speed,
+        lifetime: this._rand(0.28, 0.45),
+        radius: this._rand(3.5, 5.5),
+        radiusEnd: 0,
+        color: this._rand(0, 1) > 0.4 ? '#FFD700' : '#ffec6e',
+        opacity: 1,
         opacityEnd: 0,
-        shape:      ParticleShape.CIRCLE,
+        shape: ParticleShape.CIRCLE,
       });
     }
 
@@ -150,17 +152,17 @@ class ParticleSystem {
     const rippleTimes = [0, 0.06]; // druhý s malým zpožděním (simulujeme offsetem lifetime)
     for (const offset of rippleTimes) {
       this._addParticle({
-        x:          x,
-        y:          y,
-        vx:         0,
-        vy:         0,
-        lifetime:   0.40 - offset,
-        radius:     COIN.RADIUS * 0.8,
-        radiusEnd:  COIN.RADIUS * 3.2,
-        color:      '#FFD700',
-        opacity:    0.7,
+        x: x,
+        y: y,
+        vx: 0,
+        vy: 0,
+        lifetime: 0.4 - offset,
+        radius: COIN.RADIUS * 0.8,
+        radiusEnd: COIN.RADIUS * 3.2,
+        color: '#FFD700',
+        opacity: 0.7,
         opacityEnd: 0,
-        shape:      ParticleShape.RING,
+        shape: ParticleShape.RING,
       });
     }
   }
@@ -177,9 +179,9 @@ class ParticleSystem {
       p.update(dt);
     }
 
-    const dead = this._particles.filter(p => !p.active);
+    const dead = this._particles.filter((p) => !p.active);
     for (const p of dead) p.remove();
-    this._particles = this._particles.filter(p => p.active);
+    this._particles = this._particles.filter((p) => p.active);
   }
 
   /**
@@ -187,7 +189,7 @@ class ParticleSystem {
    */
   reset() {
     for (const p of this._particles) p.remove();
-    this._particles       = [];
+    this._particles = [];
     this._smokeAccumulator = 0;
   }
 }

@@ -1,0 +1,24 @@
+{
+  "name": "streetracer",
+  "version": "1.0.0",
+  "description": "vibecoded demo",
+  "main": "index.js",
+  "scripts": {
+    "format": "prettier --write \"**/*.{js,html,css}\""
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jandohnal/streetRacer.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/jandohnal/streetRacer/issues"
+  },
+  "homepage": "https://github.com/jandohnal/streetRacer#readme",
+  "devDependencies": {
+    "prettier": "^3.8.3"
+  }
+}

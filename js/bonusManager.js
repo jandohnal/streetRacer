@@ -34,7 +34,7 @@ class BonusManager {
 
   /** @private */
   _initialDelay() {
-    return 5 + Math.random() * 5;   // 5–10 s od startu
+    return 5 + Math.random() * 5; // 5–10 s od startu
   }
 
   /** @private */
@@ -46,17 +46,18 @@ class BonusManager {
   /** @private */
   _getAvailableLanes() {
     const safeZone = COIN.RADIUS * 2 + SPAWN.SAFE_GAP;
-    const cars     = this._trafficManager.getCars();
+    const cars = this._trafficManager.getCars();
 
     const occupiedLanes = new Set(
       cars
-        .filter(car => car.cy - car.height / 2 < safeZone + 60)
-        .map(car => car.laneIndex)
-        .filter(i => i !== -1)
+        .filter((car) => car.cy - car.height / 2 < safeZone + 60)
+        .map((car) => car.laneIndex)
+        .filter((i) => i !== -1),
     );
 
-    return Array.from({ length: ROAD.LANE_COUNT }, (_, i) => i)
-      .filter(i => !occupiedLanes.has(i));
+    return Array.from({ length: ROAD.LANE_COUNT }, (_, i) => i).filter(
+      (i) => !occupiedLanes.has(i),
+    );
   }
 
   /** @private */
@@ -65,7 +66,7 @@ class BonusManager {
     if (available.length === 0) return;
 
     const laneIndex = available[Math.floor(Math.random() * available.length)];
-    const startY    = -(COIN.RADIUS) - 5;
+    const startY = -COIN.RADIUS - 5;
 
     // Prozatím pouze ANTI_RADAR — rozšiřitelné na více typů
     const bonus = new Bonus(this._svg, laneIndex, startY, BonusType.ANTI_RADAR);
@@ -84,7 +85,7 @@ class BonusManager {
       bonus.update(dt, roadSpeed);
     }
 
-    this._bonuses = this._bonuses.filter(b => b.active);
+    this._bonuses = this._bonuses.filter((b) => b.active);
 
     this._spawnTimer -= dt;
     if (this._spawnTimer <= 0) {
@@ -104,7 +105,7 @@ class BonusManager {
   /** Resetuje správce bonusů. */
   reset() {
     for (const bonus of this._bonuses) bonus.remove();
-    this._bonuses      = [];
-    this._spawnTimer   = this._initialDelay();
+    this._bonuses = [];
+    this._spawnTimer = this._initialDelay();
   }
 }

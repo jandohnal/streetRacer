@@ -106,7 +106,7 @@ class Coin {
    */
   collect() {
     this.collected = true;
-    this.active    = false;
+    this.active = false;
     this.remove();
   }
 
@@ -118,7 +118,7 @@ class Coin {
     return {
       cx: this._cx,
       cy: this._cy,
-      r:  COIN.RADIUS,
+      r: COIN.RADIUS,
     };
   }
 

@@ -65,13 +65,14 @@ class CoinManager {
 
     const occupiedLanes = new Set(
       cars
-        .filter(car => car.cy - car.height / 2 < safeZone + 60)
-        .map(car => car.laneIndex)
-        .filter(i => i !== -1)
+        .filter((car) => car.cy - car.height / 2 < safeZone + 60)
+        .map((car) => car.laneIndex)
+        .filter((i) => i !== -1),
     );
 
-    return Array.from({ length: ROAD.LANE_COUNT }, (_, i) => i)
-      .filter(i => !occupiedLanes.has(i));
+    return Array.from({ length: ROAD.LANE_COUNT }, (_, i) => i).filter(
+      (i) => !occupiedLanes.has(i),
+    );
   }
 
   /**
@@ -103,12 +104,12 @@ class CoinManager {
     const available = this._getAvailableLanes();
     if (available.length === 0) return;
 
-    const laneIndex    = available[Math.floor(Math.random() * available.length)];
-    const coinsInRow   = this._coinsPerLane(speed);
-    const spacing      = COIN.RADIUS * 2 + 18;
+    const laneIndex = available[Math.floor(Math.random() * available.length)];
+    const coinsInRow = this._coinsPerLane(speed);
+    const spacing = COIN.RADIUS * 2 + 18;
 
     for (let i = 0; i < coinsInRow; i++) {
-      const startY = -(COIN.RADIUS) - 5 - i * spacing;
+      const startY = -COIN.RADIUS - 5 - i * spacing;
       this._coins.push(new Coin(this._svg, laneIndex, startY));
     }
   }
@@ -126,7 +127,7 @@ class CoinManager {
     }
 
     // Odstranění neaktivních (mimo plátno nebo sebrané)
-    this._coins = this._coins.filter(c => c.active);
+    this._coins = this._coins.filter((c) => c.active);
 
     // Spawn timer
     this._spawnTimer -= dt;

@@ -9,7 +9,6 @@
  */
 
 const CollisionSystem = Object.freeze({
-
   /**
    * Zkontroluje, zda hráčovo auto koliduje s jakýmkoliv dopravním vozidlem.
    *
@@ -46,11 +45,11 @@ const CollisionSystem = Object.freeze({
    */
   checkPlayerVsCoins(playerCar, coins) {
     const player = playerCar.getHitbox();
-    const pcx    = player.x + player.width  / 2;
-    const pcy    = player.y + player.height / 2;
-    const pr     = Math.min(player.width, player.height) / 2;
+    const pcx = player.x + player.width / 2;
+    const pcy = player.y + player.height / 2;
+    const pr = Math.min(player.width, player.height) / 2;
 
-    let count     = 0;
+    let count = 0;
     const positions = [];
 
     for (const coin of coins) {
@@ -75,9 +74,9 @@ const CollisionSystem = Object.freeze({
    */
   checkPlayerVsBonuses(playerCar, bonuses) {
     const player = playerCar.getHitbox();
-    const pcx    = player.x + player.width  / 2;
-    const pcy    = player.y + player.height / 2;
-    const pr     = Math.min(player.width, player.height) / 2;
+    const pcx = player.x + player.width / 2;
+    const pcy = player.y + player.height / 2;
+    const pr = Math.min(player.width, player.height) / 2;
 
     const collected = [];
     for (const bonus of bonuses) {
@@ -105,8 +104,8 @@ const CollisionSystem = Object.freeze({
     if (speedKmh <= POLICE.SPEED_LIMIT_KMH) return null;
 
     const player = playerCar.getHitbox();
-    const pcx    = player.x + player.width  / 2;
-    const pcy    = player.y + player.height / 2;
+    const pcx = player.x + player.width / 2;
+    const pcy = player.y + player.height / 2;
 
     for (const car of policeCars) {
       const { cx, cy, r } = car.getRadarCircle();
@@ -129,8 +128,8 @@ const CollisionSystem = Object.freeze({
    * @param {Array<TrafficCar|PoliceCar|RacerCar>} vehicles - Všechna AI vozidla.
    */
   resolveVehicleSeparation(vehicles) {
-    const RESTITUTION  = 0.25; // koeficient odrazu při nájezdu zezadu (0 = bez odrazu)
-    const SIDE_PUSH    = 140;  // px/s — boční odrazová rychlost při bočním kontaktu
+    const RESTITUTION = 0.25; // koeficient odrazu při nájezdu zezadu (0 = bez odrazu)
+    const SIDE_PUSH = 140; // px/s — boční odrazová rychlost při bočním kontaktu
 
     for (let i = 0; i < vehicles.length; i++) {
       for (let j = i + 1; j < vehicles.length; j++) {
@@ -140,12 +139,12 @@ const CollisionSystem = Object.freeze({
         const hb = b.getHitbox();
         if (!CollisionSystem._aabbOverlap(ha, hb)) continue;
 
-        const aCx = ha.x + ha.width  / 2;
-        const bCx = hb.x + hb.width  / 2;
+        const aCx = ha.x + ha.width / 2;
+        const bCx = hb.x + hb.width / 2;
         const aCy = ha.y + ha.height / 2;
         const bCy = hb.y + hb.height / 2;
 
-        const overlapX = (ha.width  + hb.width)  / 2 - Math.abs(aCx - bCx);
+        const overlapX = (ha.width + hb.width) / 2 - Math.abs(aCx - bCx);
         const overlapY = (ha.height + hb.height) / 2 - Math.abs(aCy - bCy);
         if (overlapX <= 0 || overlapY <= 0) continue;
 
@@ -155,21 +154,21 @@ const CollisionSystem = Object.freeze({
 
         if (overlapY <= overlapX) {
           // ── Nájezd zezadu (podélná osa) ──────────────────────────────────
-          const rear  = a.cy > b.cy ? a : b;
+          const rear = a.cy > b.cy ? a : b;
           const front = a.cy > b.cy ? b : a;
           const mr = rear.mass;
           const mf = front.mass;
           const tot = mr + mf;
 
           // Poziční korekce dle hmotnosti — lehčí auto ustoupí víc
-          rear.separate(0,   overlapY * (mf / tot));
+          rear.separate(0, overlapY * (mf / tot));
           front.separate(0, -overlapY * (mr / tot));
 
           // Přenos hybnosti podél jízdy — zadní (rychlejší) postrčí přední vpřed
           const u1 = rear.speed;
           const u2 = front.speed;
           if (u1 > u2) {
-            const e  = RESTITUTION;
+            const e = RESTITUTION;
             const v1 = (mr * u1 + mf * u2 - mf * e * (u1 - u2)) / tot;
             const v2 = (mr * u1 + mf * u2 + mr * e * (u1 - u2)) / tot;
             rear.setSpeed(v1);
@@ -204,11 +203,11 @@ const CollisionSystem = Object.freeze({
    */
   resolvePlayerVsVehicles(playerCar, vehicles, speed) {
     const REAR_BOUNCE = 0.92; // lehký odraz při nájezdu zezadu
-    const SIDE_SLOW   = 0.97; // mírné zpomalení při bočním škrtnutí
-    const SIDE_PUSH   = 160;  // px/s — boční odraz auta
+    const SIDE_SLOW = 0.97; // mírné zpomalení při bočním škrtnutí
+    const SIDE_PUSH = 160; // px/s — boční odraz auta
 
-    const ph  = playerCar.getHitbox();
-    const pCx = ph.x + ph.width  / 2;
+    const ph = playerCar.getHitbox();
+    const pCx = ph.x + ph.width / 2;
     const pCy = ph.y + ph.height / 2;
 
     let newSpeed = speed;
@@ -217,10 +216,10 @@ const CollisionSystem = Object.freeze({
       const vh = v.getHitbox();
       if (!CollisionSystem._aabbOverlap(ph, vh)) continue;
 
-      const vCx = vh.x + vh.width  / 2;
+      const vCx = vh.x + vh.width / 2;
       const vCy = vh.y + vh.height / 2;
 
-      const overlapX = (ph.width  + vh.width)  / 2 - Math.abs(pCx - vCx);
+      const overlapX = (ph.width + vh.width) / 2 - Math.abs(pCx - vCx);
       const overlapY = (ph.height + vh.height) / 2 - Math.abs(pCy - vCy);
       if (overlapX <= 0 || overlapY <= 0) continue;
 
@@ -255,10 +254,7 @@ const CollisionSystem = Object.freeze({
    */
   _aabbOverlap(a, b) {
     return (
-      a.x < b.x + b.width  &&
-      a.x + a.width  > b.x &&
-      a.y < b.y + b.height &&
-      a.y + a.height > b.y
+      a.x < b.x + b.width && a.x + a.width > b.x && a.y < b.y + b.height && a.y + a.height > b.y
     );
   },
 
@@ -281,14 +277,13 @@ const CollisionSystem = Object.freeze({
 
     const { x, y, width: w, height: h } = other;
     const testPoints = [
-      { wx: x + 1,         wy: y + 1 },
-      { wx: x + w - 1,     wy: y + 1 },
-      { wx: x + 1,         wy: y + h - 1 },
-      { wx: x + w - 1,     wy: y + h - 1 },
-      { wx: x + w / 2,     wy: y + h / 2 },
+      { wx: x + 1, wy: y + 1 },
+      { wx: x + w - 1, wy: y + 1 },
+      { wx: x + 1, wy: y + h - 1 },
+      { wx: x + w - 1, wy: y + h - 1 },
+      { wx: x + w / 2, wy: y + h / 2 },
     ];
 
     return testPoints.some(({ wx, wy }) => playerCar.isOpaqueAt(wx, wy));
   },
-
 });

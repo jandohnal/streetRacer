@@ -8,38 +8,38 @@
 class Hud {
   constructor() {
     // HUD hodnoty
-    this._elScore    = document.getElementById('hud-score-value');
+    this._elScore = document.getElementById('hud-score-value');
     this._elDistance = document.getElementById('hud-distance-value');
-    this._elSpeed    = document.getElementById('hud-speed-value');
+    this._elSpeed = document.getElementById('hud-speed-value');
 
     // Overlay panel
-    this._overlay        = document.getElementById('overlay');
-    this._overlayTitle   = document.getElementById('overlay-title');
-    this._overlayStats   = document.getElementById('overlay-stats');
+    this._overlay = document.getElementById('overlay');
+    this._overlayTitle = document.getElementById('overlay-title');
+    this._overlayStats = document.getElementById('overlay-stats');
     this._overlaySubtitle = document.getElementById('overlay-subtitle');
-    this._btnStart       = document.getElementById('btn-start');
-    this._btnClose       = document.getElementById('btn-close');
+    this._btnStart = document.getElementById('btn-start');
+    this._btnClose = document.getElementById('btn-close');
 
     // Výsledky
-    this._elResultScore    = document.getElementById('result-score');
+    this._elResultScore = document.getElementById('result-score');
     this._elResultDistance = document.getElementById('result-distance');
-    this._elResultCoins    = document.getElementById('result-coins');
+    this._elResultCoins = document.getElementById('result-coins');
 
     // Name entry (leaderboard)
-    this._nameEntry       = document.getElementById('name-entry');
-    this._inputName       = document.getElementById('input-name');
-    this._btnSubmitScore  = document.getElementById('btn-submit-score');
+    this._nameEntry = document.getElementById('name-entry');
+    this._inputName = document.getElementById('input-name');
+    this._btnSubmitScore = document.getElementById('btn-submit-score');
     this._scoreSaveStatus = document.getElementById('score-save-status');
-    this._btnLeaderboard  = document.getElementById('btn-leaderboard');
+    this._btnLeaderboard = document.getElementById('btn-leaderboard');
 
     // Leaderboard overlay
-    this._lbOverlay   = document.getElementById('leaderboard-overlay');
-    this._lbList      = document.getElementById('leaderboard-list');
-    this._btnLbClose  = document.getElementById('btn-leaderboard-close');
+    this._lbOverlay = document.getElementById('leaderboard-overlay');
+    this._lbList = document.getElementById('leaderboard-list');
+    this._btnLbClose = document.getElementById('btn-leaderboard-close');
 
     // Anti-radar odpočet
-    this._elAntiradar      = document.getElementById('hud-antiradar');
-    this._elAntiradaTimer  = document.getElementById('hud-antirada-timer');
+    this._elAntiradar = document.getElementById('hud-antiradar');
+    this._elAntiradaTimer = document.getElementById('hud-antirada-timer');
   }
 
   // ─── HUD ─────────────────────────────────────────────────────────────────────
@@ -62,9 +62,9 @@ class Hud {
    * @param {number} speedPxPerS    - Rychlost silnice v px/s.
    */
   update(timeSeconds, distanceMeters, speedPxPerS) {
-    this._elScore.textContent    = this._formatTime(timeSeconds);
+    this._elScore.textContent = this._formatTime(timeSeconds);
     this._elDistance.textContent = `${distanceMeters} / ${RACE.GOAL_METERS} m`;
-    this._elSpeed.textContent    = `${Math.round(speedPxPerS * PHYSICS.PX_PER_S_TO_KMH)} km/h`;
+    this._elSpeed.textContent = `${Math.round(speedPxPerS * PHYSICS.PX_PER_S_TO_KMH)} km/h`;
   }
 
   // ─── Overlay ─────────────────────────────────────────────────────────────────
@@ -73,8 +73,8 @@ class Hud {
    * Zobrazí úvodní (start) overlay.
    */
   showStart() {
-    this._overlayTitle.textContent    = 'STREET RACER';
-    this._overlayTitle.style.color    = '#e94560';
+    this._overlayTitle.textContent = 'STREET RACER';
+    this._overlayTitle.style.color = '#e94560';
     this._overlayTitle.style.textShadow = '0 0 20px rgba(233, 69, 96, 0.6)';
     this._overlaySubtitle.textContent = `Ujeď ${RACE.GOAL_METERS} m co nejrychleji! Mince ti uberou čas.`;
     this._overlayStats.classList.add('hidden');
@@ -94,16 +94,23 @@ class Hud {
    * @param {number}  [bustedSpeedKmh=0]  - Rychlost při chycení (km/h), jen pro BUSTED
    * @param {boolean} [finished=false]    - true = dojel cílovou vzdálenost
    */
-  showGameOver(timeSeconds, distanceMeters, coins, busted = false, bustedSpeedKmh = 0, finished = false) {
-    const title = finished ? 'DOJEL JSI!' : (busted ? 'BUSTED!' : 'GAME OVER');
-    const color = finished ? '#27e060' : (busted ? '#1a8cff' : '#e94560');
+  showGameOver(
+    timeSeconds,
+    distanceMeters,
+    coins,
+    busted = false,
+    bustedSpeedKmh = 0,
+    finished = false,
+  ) {
+    const title = finished ? 'DOJEL JSI!' : busted ? 'BUSTED!' : 'GAME OVER';
+    const color = finished ? '#27e060' : busted ? '#1a8cff' : '#e94560';
     this._overlayTitle.textContent = title;
     this._overlayTitle.style.color = color;
     this._overlayTitle.style.textShadow = finished
       ? '0 0 20px rgba(39, 224, 96, 0.6)'
-      : (busted
-          ? '0 0 20px rgba(26, 140, 255, 0.7)'
-          : '0 0 20px rgba(233, 69, 96, 0.6)');
+      : busted
+        ? '0 0 20px rgba(26, 140, 255, 0.7)'
+        : '0 0 20px rgba(233, 69, 96, 0.6)';
 
     if (busted) {
       this._overlaySubtitle.innerHTML =
@@ -115,9 +122,9 @@ class Hud {
       this._overlaySubtitle.textContent = 'Dobrá jízda! Zkus to znovu.';
     }
 
-    this._elResultScore.textContent    = this._formatTime(timeSeconds);
+    this._elResultScore.textContent = this._formatTime(timeSeconds);
     this._elResultDistance.textContent = `${distanceMeters} m`;
-    this._elResultCoins.textContent    = coins;
+    this._elResultCoins.textContent = coins;
 
     this._overlayStats.classList.remove('hidden');
     this._btnStart.textContent = 'HRÁT ZNOVU';
@@ -127,10 +134,10 @@ class Hud {
     // Zobraz name entry pro uložení skóre — jen pokud hráč dojel nebo narazil (ne busted)
     if (!busted) {
       this._nameEntry.classList.remove('hidden');
-      this._btnSubmitScore.disabled     = false;
-      this._inputName.value             = localStorage.getItem('playerName') || '';
+      this._btnSubmitScore.disabled = false;
+      this._inputName.value = localStorage.getItem('playerName') || '';
       this._scoreSaveStatus.textContent = '';
-      this._scoreSaveStatus.className   = 'score-save-status';
+      this._scoreSaveStatus.className = 'score-save-status';
     } else {
       this._nameEntry.classList.add('hidden');
     }
@@ -160,7 +167,7 @@ class Hud {
   setScoreSaveStatus(state) {
     const msgs = { loading: 'Ukládám...', ok: 'Skóre uloženo!', err: 'Chyba při ukládání.' };
     this._scoreSaveStatus.textContent = msgs[state] || '';
-    this._scoreSaveStatus.className   = 'score-save-status ' + (state === 'loading' ? '' : state);
+    this._scoreSaveStatus.className = 'score-save-status ' + (state === 'loading' ? '' : state);
     if (state !== 'loading') {
       this._btnSubmitScore.disabled = true;
     }
@@ -183,7 +190,7 @@ class Hud {
     this._lbList.innerHTML = '';
     if (entries.length === 0) {
       const li = document.createElement('li');
-      li.className   = 'lb-loading';
+      li.className = 'lb-loading';
       li.textContent = 'Žádné výsledky.';
       this._lbList.appendChild(li);
     } else {
@@ -203,8 +210,10 @@ class Hud {
 
   /** @private */
   _escape(str) {
-    return String(str).replace(/[&<>"']/g, c =>
-      ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+    return String(str).replace(
+      /[&<>"']/g,
+      (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c],
+    );
   }
 
   /**

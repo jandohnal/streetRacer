@@ -1,13 +1,16 @@
 /* ============================================================
    Reset & Base
    ============================================================ */
-*, *::before, *::after {
+*,
+*::before,
+*::after {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
 }
 
-html, body {
+html,
+body {
   width: 100%;
   height: 100%;
   background: #111;
@@ -64,7 +67,7 @@ html, body {
   justify-content: space-between;
   align-items: flex-start;
   padding: 8px 12px;
-  background: linear-gradient(to bottom, rgba(0,0,0,0.65) 80%, transparent);
+  background: linear-gradient(to bottom, rgba(0, 0, 0, 0.65) 80%, transparent);
   pointer-events: none;
   z-index: 10;
   gap: 4px;
@@ -150,7 +153,7 @@ html, body {
 
 .overlay-stats {
   width: 100%;
-  background: rgba(255,255,255,0.05);
+  background: rgba(255, 255, 255, 0.05);
   border-radius: 8px;
   padding: 12px;
   display: flex;
@@ -164,7 +167,7 @@ html, body {
 }
 
 .overlay-stats strong {
-  color: #FFD700;
+  color: #ffd700;
   font-size: 15px;
 }
 
@@ -185,7 +188,9 @@ html, body {
   font-weight: 700;
   letter-spacing: 0.1em;
   cursor: pointer;
-  transition: background 0.15s, transform 0.1s;
+  transition:
+    background 0.15s,
+    transform 0.1s;
   margin-top: 4px;
 }
 
@@ -207,7 +212,10 @@ html, body {
   font-weight: 600;
   letter-spacing: 0.08em;
   cursor: pointer;
-  transition: color 0.15s, border-color 0.15s, transform 0.1s;
+  transition:
+    color 0.15s,
+    border-color 0.15s,
+    transform 0.1s;
   margin-top: 6px;
 }
 
@@ -312,8 +320,13 @@ html, body {
 }
 
 @keyframes antiradar-pulse {
-  0%, 100% { box-shadow: 0 0 8px rgba(26, 140, 255, 0.5); }
-  50%       { box-shadow: 0 0 18px rgba(26, 140, 255, 0.9); }
+  0%,
+  100% {
+    box-shadow: 0 0 8px rgba(26, 140, 255, 0.5);
+  }
+  50% {
+    box-shadow: 0 0 18px rgba(26, 140, 255, 0.9);
+  }
 }
 
 .antiradar-icon {
@@ -351,7 +364,10 @@ html, body {
   justify-content: center;
   cursor: pointer;
   padding: 0;
-  transition: background 0.15s, border-color 0.15s, transform 0.1s;
+  transition:
+    background 0.15s,
+    border-color 0.15s,
+    transform 0.1s;
   flex-shrink: 0;
   align-self: center;
   -webkit-tap-highlight-color: transparent;
@@ -370,13 +386,23 @@ html, body {
 }
 
 /* Ikony — zobrazujeme jen tu správnou */
-.mute-icon { pointer-events: none; }
+.mute-icon {
+  pointer-events: none;
+}
 
 /* Výchozí stav: muted → zobrazit přeškrtnutý reproduktor */
-.btn-mute.muted    .mute-off { display: inline; }
-.btn-mute.muted    .mute-on  { display: none;   }
-.btn-mute:not(.muted) .mute-off { display: none;   }
-.btn-mute:not(.muted) .mute-on  { display: inline; }
+.btn-mute.muted .mute-off {
+  display: inline;
+}
+.btn-mute.muted .mute-on {
+  display: none;
+}
+.btn-mute:not(.muted) .mute-off {
+  display: none;
+}
+.btn-mute:not(.muted) .mute-on {
+  display: inline;
+}
 
 /* ============================================================
    Name entry (po game over)
@@ -391,7 +417,7 @@ html, body {
 
 .name-input {
   width: 100%;
-  background: rgba(255,255,255,0.08);
+  background: rgba(255, 255, 255, 0.08);
   border: 1.5px solid #555;
   border-radius: 8px;
   color: #fff;
@@ -424,8 +450,12 @@ html, body {
   min-height: 16px;
 }
 
-.score-save-status.ok  { color: #4caf50; }
-.score-save-status.err { color: #e94560; }
+.score-save-status.ok {
+  color: #4caf50;
+}
+.score-save-status.err {
+  color: #e94560;
+}
 
 /* ============================================================
    Leaderboard overlay
@@ -438,7 +468,7 @@ html, body {
 #leaderboard-title {
   font-size: 22px;
   font-weight: 900;
-  color: #FFD700;
+  color: #ffd700;
   letter-spacing: 0.12em;
   text-shadow: 0 0 16px rgba(255, 215, 0, 0.5);
 }
@@ -457,7 +487,7 @@ html, body {
   display: flex;
   align-items: center;
   gap: 8px;
-  background: rgba(255,255,255,0.05);
+  background: rgba(255, 255, 255, 0.05);
   border-radius: 8px;
   padding: 8px 10px;
   font-size: 13px;
@@ -472,9 +502,15 @@ html, body {
   color: #888;
 }
 
-.lb-rank-1 { color: #FFD700; }
-.lb-rank-2 { color: #C0C0C0; }
-.lb-rank-3 { color: #cd7f32; }
+.lb-rank-1 {
+  color: #ffd700;
+}
+.lb-rank-2 {
+  color: #c0c0c0;
+}
+.lb-rank-3 {
+  color: #cd7f32;
+}
 
 .lb-name {
   flex: 1;
@@ -487,7 +523,7 @@ html, body {
 
 .lb-score {
   font-weight: 900;
-  color: #FFD700;
+  color: #ffd700;
   font-size: 14px;
   white-space: nowrap;
 }

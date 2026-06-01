@@ -14,7 +14,7 @@ class ScoreSystem {
     this._distancePx = 0;
 
     /** @private */
-    this._coinCount  = 0;
+    this._coinCount = 0;
 
     /** @private — uplynulý herní čas závodu (s) */
     this._elapsed = 0;
@@ -92,7 +92,7 @@ class ScoreSystem {
    */
   reset() {
     this._distancePx = 0;
-    this._coinCount  = 0;
-    this._elapsed    = 0;
+    this._coinCount = 0;
+    this._elapsed = 0;
   }
 }

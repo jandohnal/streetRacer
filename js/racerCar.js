@@ -39,21 +39,21 @@ class RacerCar {
 
     // Lane-change animace
     this._lcActive = false;
-    this._lcFromX  = 0;
-    this._lcToX    = 0;
-    this._lcTimer  = 0;
+    this._lcFromX = 0;
+    this._lcToX = 0;
+    this._lcTimer = 0;
     this._lcTarget = laneIndex;
 
     /** Aktivní příznak */
     this.active = true;
 
     /** @private */
-    this._group      = null;
-    this._blinkerL   = null;
-    this._blinkerR   = null;
+    this._group = null;
+    this._blinkerL = null;
+    this._blinkerR = null;
     this._blinkTimer = 0;
-    this._blinkOn    = false;
-    this._blinkDir   = 0;
+    this._blinkOn = false;
+    this._blinkDir = 0;
 
     this._color = RACER_COLORS[Math.floor(Math.random() * RACER_COLORS.length)];
     this._createElements();
@@ -67,14 +67,16 @@ class RacerCar {
     const el = (tag) => document.createElementNS(ns, tag);
     const rect = (x, y, w, h, fill, rx = 0) => {
       const r = el('rect');
-      r.setAttribute('x', x); r.setAttribute('y', y);
-      r.setAttribute('width', w); r.setAttribute('height', h);
+      r.setAttribute('x', x);
+      r.setAttribute('y', y);
+      r.setAttribute('width', w);
+      r.setAttribute('height', h);
       r.setAttribute('fill', fill);
       if (rx) r.setAttribute('rx', rx);
       return r;
     };
 
-    const g  = el('g');
+    const g = el('g');
     const hw = this._w / 2;
     const hh = this._h / 2;
     const dark = this._darken(this._color, 0.65);
@@ -85,15 +87,15 @@ class RacerCar {
     // Střecha — sportovní (nižší, užší)
     const rw = this._w * 0.58;
     const rh = this._h * 0.32;
-    g.appendChild(rect(-rw/2, -hh + this._h * 0.24, rw, rh, dark, 3));
+    g.appendChild(rect(-rw / 2, -hh + this._h * 0.24, rw, rh, dark, 3));
 
     // Přední světla (světle žlutá)
-    g.appendChild(rect(-hw + 3,      -hh + 3, 7, 4, '#ffffaa', 1));
-    g.appendChild(rect(hw - 10,      -hh + 3, 7, 4, '#ffffaa', 1));
+    g.appendChild(rect(-hw + 3, -hh + 3, 7, 4, '#ffffaa', 1));
+    g.appendChild(rect(hw - 10, -hh + 3, 7, 4, '#ffffaa', 1));
 
     // Zadní světla — reference pro blinkr
-    this._blinkerL = rect(-hw + 3,   hh - 7, 7, 4, '#ff2200', 1);
-    this._blinkerR = rect(hw - 10,   hh - 7, 7, 4, '#ff2200', 1);
+    this._blinkerL = rect(-hw + 3, hh - 7, 7, 4, '#ff2200', 1);
+    this._blinkerR = rect(hw - 10, hh - 7, 7, 4, '#ff2200', 1);
     g.appendChild(this._blinkerL);
     g.appendChild(this._blinkerR);
 
@@ -102,7 +104,8 @@ class RacerCar {
 
     // Číslo "R" — označení racera
     const txt = el('text');
-    txt.setAttribute('x', 0); txt.setAttribute('y', 4);
+    txt.setAttribute('x', 0);
+    txt.setAttribute('y', 4);
     txt.setAttribute('text-anchor', 'middle');
     txt.setAttribute('font-size', '11');
     txt.setAttribute('font-weight', 'bold');
@@ -118,10 +121,13 @@ class RacerCar {
 
   /** @private */
   _darken(hex, f) {
-    const r = parseInt(hex.slice(1,3),16);
-    const g = parseInt(hex.slice(3,5),16);
-    const b = parseInt(hex.slice(5,7),16);
-    const d = v => Math.max(0,Math.round(v*f)).toString(16).padStart(2,'0');
+    const r = parseInt(hex.slice(1, 3), 16);
+    const g = parseInt(hex.slice(3, 5), 16);
+    const b = parseInt(hex.slice(5, 7), 16);
+    const d = (v) =>
+      Math.max(0, Math.round(v * f))
+        .toString(16)
+        .padStart(2, '0');
     return `#${d(r)}${d(g)}${d(b)}`;
   }
 
@@ -143,9 +149,9 @@ class RacerCar {
     const playerY = PLAYER.Y_CENTER;
 
     // ── Gumičkový multiplikátor ──────────────────────────────────────────────
-    const ZONE_TOP    = CANVAS.HEIGHT * 0.05;
+    const ZONE_TOP = CANVAS.HEIGHT * 0.05;
     const ZONE_BOTTOM = CANVAS.HEIGHT * 0.75;
-    const WAIT_UNTIL  = CANVAS.HEIGHT * 0.50; // vrátí se sem před obnovením závodění
+    const WAIT_UNTIL = CANVAS.HEIGHT * 0.5; // vrátí se sem před obnovením závodění
 
     // Přechod do čekacího stavu — racer odplul příliš vysoko
     if (!this._waiting && this._cy < ZONE_TOP) {
@@ -159,7 +165,7 @@ class RacerCar {
     let K;
     if (this._waiting) {
       // Jede výrazně pomaleji než hráč → driftuje dolů zpět do středu
-      K = 0.80;
+      K = 0.8;
     } else if (this._cy > playerY) {
       // Racer za hráčem → agresivně dohání
       K = 1.12;
@@ -173,7 +179,7 @@ class RacerCar {
 
     // Clamp dolů — racer příliš nízko → zrychlí
     if (!this._waiting && this._cy > ZONE_BOTTOM) {
-      K = Math.max(K, 1.10);
+      K = Math.max(K, 1.1);
     }
 
     let desiredSpeed = roadSpeed * K;
@@ -182,7 +188,7 @@ class RacerCar {
     const BRAKE_DIST = 180;
     const obstacle = this._findObstacleAhead(trafficCars, player, policeCars, BRAKE_DIST);
     if (obstacle) {
-      const obsSpeed = obstacle.isPolice ? 0 : (obstacle.isPlayer ? roadSpeed : obstacle.speed);
+      const obsSpeed = obstacle.isPolice ? 0 : obstacle.isPlayer ? roadSpeed : obstacle.speed;
       if (obstacle.dist < 60) {
         desiredSpeed = Math.min(desiredSpeed, obsSpeed * 0.85);
       } else {
@@ -223,13 +229,13 @@ class RacerCar {
       this._lcTimer += dt;
       const MOVE_DUR = this._lcDuration ?? 0.35;
       const t = Math.min(this._lcTimer / MOVE_DUR, 1);
-      const ease = t < 0.5 ? 2*t*t : -1+(4-2*t)*t;
+      const ease = t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
       this._cx = this._lcFromX + (this._lcToX - this._lcFromX) * ease;
       if (t >= 1) {
-        this._cx       = this._lcToX;
+        this._cx = this._lcToX;
         this.laneIndex = this._lcTarget;
         this._lcActive = false;
-        this._lcTimer  = 0;
+        this._lcTimer = 0;
         this._resetBlinker();
       }
       this._updateBlinker(dt);
@@ -265,17 +271,35 @@ class RacerCar {
     }
 
     const LOOK_AHEAD = emergency ? 120 : 220;
-    const blockLeft    = this._isLaneBlockedAhead(this.laneIndex - 1, trafficCars, player, policeCars, LOOK_AHEAD);
-    const blockCurrent = this._isLaneBlockedAhead(this.laneIndex,     trafficCars, player, policeCars, LOOK_AHEAD);
-    const blockRight   = this._isLaneBlockedAhead(this.laneIndex + 1, trafficCars, player, policeCars, LOOK_AHEAD);
+    const blockLeft = this._isLaneBlockedAhead(
+      this.laneIndex - 1,
+      trafficCars,
+      player,
+      policeCars,
+      LOOK_AHEAD,
+    );
+    const blockCurrent = this._isLaneBlockedAhead(
+      this.laneIndex,
+      trafficCars,
+      player,
+      policeCars,
+      LOOK_AHEAD,
+    );
+    const blockRight = this._isLaneBlockedAhead(
+      this.laneIndex + 1,
+      trafficCars,
+      player,
+      policeCars,
+      LOOK_AHEAD,
+    );
 
     let targetLane = -1;
 
     if (blockCurrent) {
-      const tryLeft  = this.laneIndex - 1;
+      const tryLeft = this.laneIndex - 1;
       const tryRight = this.laneIndex + 1;
       // Preferuj stranu s více volnými pruhy za ní
-      const leftFree  = !blockLeft  && tryLeft  >= 0;
+      const leftFree = !blockLeft && tryLeft >= 0;
       const rightFree = !blockRight && tryRight < ROAD.LANE_COUNT;
       if (leftFree && rightFree) {
         targetLane = Math.random() < 0.5 ? tryLeft : tryRight;
@@ -288,8 +312,12 @@ class RacerCar {
       // Občasný náhodný přejezd jen mimo nouzový režim
       if (Math.random() < 0.015) {
         const dir = Math.random() < 0.5 ? -1 : 1;
-        const t   = this.laneIndex + dir;
-        if (t >= 0 && t < ROAD.LANE_COUNT && !this._isLaneBlockedAhead(t, trafficCars, player, policeCars, LOOK_AHEAD)) {
+        const t = this.laneIndex + dir;
+        if (
+          t >= 0 &&
+          t < ROAD.LANE_COUNT &&
+          !this._isLaneBlockedAhead(t, trafficCars, player, policeCars, LOOK_AHEAD)
+        ) {
           targetLane = t;
         }
       }
@@ -403,27 +431,27 @@ class RacerCar {
 
   /** @private */
   _startLaneChange(targetLane, emergency = false) {
-    this._lcActive   = true;
-    this._lcFromX    = this._cx;
-    this._lcToX      = LANE_CENTERS[targetLane];
-    this._lcTarget   = targetLane;
-    this._lcTimer    = 0;
+    this._lcActive = true;
+    this._lcFromX = this._cx;
+    this._lcToX = LANE_CENTERS[targetLane];
+    this._lcTarget = targetLane;
+    this._lcTimer = 0;
     this._lcDuration = emergency ? 0.18 : 0.35;
-    this._blinkDir   = targetLane > this.laneIndex ? 1 : -1;
-    this._blinkOn    = true;
+    this._blinkDir = targetLane > this.laneIndex ? 1 : -1;
+    this._blinkOn = true;
     this._blinkTimer = 0;
     this._laneChangeCooldown = emergency ? 0.4 : 1.2 + Math.random() * 0.8;
   }
 
   /** @private */
   _updateBlinker(dt) {
-    const INTERVAL = 0.20;
+    const INTERVAL = 0.2;
     this._blinkTimer += dt;
     if (this._blinkTimer >= INTERVAL) {
       this._blinkTimer -= INTERVAL;
       this._blinkOn = !this._blinkOn;
     }
-    const blink  = this._blinkOn ? '#ffaa00' : '#ff2200';
+    const blink = this._blinkOn ? '#ffaa00' : '#ff2200';
     const steady = '#ff2200';
     if (this._blinkDir < 0) {
       this._blinkerL.setAttribute('fill', blink);
@@ -438,37 +466,51 @@ class RacerCar {
   _resetBlinker() {
     this._blinkerL.setAttribute('fill', '#ff2200');
     this._blinkerR.setAttribute('fill', '#ff2200');
-    this._blinkOn  = false;
+    this._blinkOn = false;
     this._blinkDir = 0;
   }
 
   // ─── Veřejné gettery ─────────────────────────────────────────────────────────
 
-  get cy()     { return this._cy; }
-  get cx()     { return this._cx; }
-  get height() { return this._h; }
-  get speed()  { return this._speed; }
+  get cy() {
+    return this._cy;
+  }
+  get cx() {
+    return this._cx;
+  }
+  get height() {
+    return this._h;
+  }
+  get speed() {
+    return this._speed;
+  }
 
   /** @returns {number} hmotnost úměrná ploše (pro kolizní impulzy) */
-  get mass() { return this._w * this._h; }
+  get mass() {
+    return this._w * this._h;
+  }
 
   /**
    * Přímo nastaví aktuální rychlost (kolizní přenos hybnosti).
    * @param {number} v
    */
-  setSpeed(v) { this._speed = Math.max(0, v); }
+  setSpeed(v) {
+    this._speed = Math.max(0, v);
+  }
 
   /**
    * Přidá boční rychlost (kolizní odraz do strany).
    * @param {number} dvx
    */
-  applyLateralImpulse(dvx) { this._vx += dvx; }
+  applyLateralImpulse(dvx) {
+    this._vx += dvx;
+  }
 
   getHitbox() {
     return {
-      x:      this._cx - this._w / 2,
-      y:      this._cy - this._h / 2,
-      width:  this._w,
+      x: this._cx - this._w / 2,
+      y: this._cy - this._h / 2,
+      width: this._w,
       height: this._h,
     };
   }

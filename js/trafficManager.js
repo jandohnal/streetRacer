@@ -38,7 +38,7 @@ class TrafficManager {
    */
   _calcSpawnInterval(speed) {
     const speedDelta = (speed - PHYSICS.SPEED_INITIAL) / 100;
-    const interval   = SPAWN.INTERVAL_BASE - speedDelta * SPAWN.INTERVAL_STEP;
+    const interval = SPAWN.INTERVAL_BASE - speedDelta * SPAWN.INTERVAL_STEP;
     return Math.max(SPAWN.INTERVAL_MIN, interval);
   }
 
@@ -64,15 +64,12 @@ class TrafficManager {
 
     // Pro každý pruh zjistíme, zda není obsazený
     const occupiedLanes = new Set(
-      this._cars
-        .filter(car => car.cy - car.height / 2 < safeZone)
-        .map(car => car.laneIndex)
+      this._cars.filter((car) => car.cy - car.height / 2 < safeZone).map((car) => car.laneIndex),
     );
 
-    return Array.from(
-      { length: ROAD.LANE_COUNT },
-      (_, i) => i
-    ).filter(i => !occupiedLanes.has(i));
+    return Array.from({ length: ROAD.LANE_COUNT }, (_, i) => i).filter(
+      (i) => !occupiedLanes.has(i),
+    );
   }
 
   /**
@@ -85,8 +82,8 @@ class TrafficManager {
     const count = 1 + Math.floor(Math.random() * SPAWN.MAX_PER_SPAWN);
 
     for (let n = 0; n < count; n++) {
-      const type      = this._pickVehicleType();
-      const def       = VEHICLE_DEFS[type];
+      const type = this._pickVehicleType();
+      const def = VEHICLE_DEFS[type];
       const available = this._getAvailableLanes(def.height);
 
       if (available.length === 0) break;
@@ -121,9 +118,9 @@ class TrafficManager {
     this._updateLaneChanges(dt, player);
 
     // Odstranění neaktivních
-    const inactive = this._cars.filter(c => !c.active);
+    const inactive = this._cars.filter((c) => !c.active);
     for (const car of inactive) car.remove();
-    this._cars = this._cars.filter(c => c.active);
+    this._cars = this._cars.filter((c) => c.active);
 
     // Spawn logika
     this._spawnTimer -= dt;
@@ -215,26 +212,26 @@ class TrafficManager {
     const OVERTAKE_DELAY = 2.0; // s — jak dlouho čeká CAR před předjetím
 
     for (let lane = 0; lane < ROAD.LANE_COUNT; lane++) {
-      const inLane = this._cars
-        .filter(c => c.laneIndex === lane)
-        .sort((a, b) => a.cy - b.cy);
+      const inLane = this._cars.filter((c) => c.laneIndex === lane).sort((a, b) => a.cy - b.cy);
 
       for (let i = 0; i < inLane.length - 1; i++) {
-        const leader   = inLane[i];
+        const leader = inLane[i];
         const follower = inLane[i + 1];
 
-        const leaderBottom = leader.cy   + leader.height   / 2;
-        const followerTop  = follower.cy - follower.height / 2;
-        const gap          = followerTop - leaderBottom;
-        const triggerDist  = leader.height * SPAWN.FOLLOW_GAP_FACTOR;
+        const leaderBottom = leader.cy + leader.height / 2;
+        const followerTop = follower.cy - follower.height / 2;
+        const gap = followerTop - leaderBottom;
+        const triggerDist = leader.height * SPAWN.FOLLOW_GAP_FACTOR;
 
         if (gap < triggerDist && follower.speed > leader.speed) {
           follower.matchSpeed(leader.speed, dt);
 
           // CAR se po OVERTAKE_DELAY pokusí předjet
-          if (follower.type === VehicleType.CAR &&
-              follower.blockedTimer >= OVERTAKE_DELAY &&
-              !follower.isChangingLane) {
+          if (
+            follower.type === VehicleType.CAR &&
+            follower.blockedTimer >= OVERTAKE_DELAY &&
+            !follower.isChangingLane
+          ) {
             this._tryOvertake(follower, player);
           }
         } else if (gap >= triggerDist * 1.5) {
@@ -250,8 +247,11 @@ class TrafficManager {
    * @param {TrafficCar} car
    */
   _tryOvertake(car, player = null) {
-    const leftOk  = car.laneIndex - 1 >= 0              && this._isLaneClearForChange(car, car.laneIndex - 1, player);
-    const rightOk = car.laneIndex + 1 < ROAD.LANE_COUNT && this._isLaneClearForChange(car, car.laneIndex + 1, player);
+    const leftOk =
+      car.laneIndex - 1 >= 0 && this._isLaneClearForChange(car, car.laneIndex - 1, player);
+    const rightOk =
+      car.laneIndex + 1 < ROAD.LANE_COUNT &&
+      this._isLaneClearForChange(car, car.laneIndex + 1, player);
 
     let targetLane = -1;
     if (leftOk && rightOk) {

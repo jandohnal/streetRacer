@@ -16,12 +16,12 @@ const BonusType = Object.freeze({
 /** Vizuální konfigurace dle typu */
 const BONUS_DEFS = Object.freeze({
   [BonusType.ANTI_RADAR]: {
-    colorFill:   '#1a8cff',
+    colorFill: '#1a8cff',
     colorStroke: '#0055cc',
-    innerColor:  '#66b8ff',
-    symbol:      '★',
+    innerColor: '#66b8ff',
+    symbol: '★',
     symbolColor: '#003399',
-    duration:    30,   // sekund aktivního efektu
+    duration: 30, // sekund aktivního efektu
   },
 });
 
@@ -70,7 +70,7 @@ class Bonus {
 
   /** @private */
   _createElements() {
-    const g   = this._createElement('g');
+    const g = this._createElement('g');
     const def = this._def;
 
     // Vnější záře (glow) — větší poloprůhledný kruh
@@ -154,7 +154,7 @@ class Bonus {
    */
   collect() {
     this.collected = true;
-    this.active    = false;
+    this.active = false;
     this.remove();
   }
 

@@ -34,6 +34,7 @@ const projectClasses = {
   Coin: 'readonly',
   CoinManager: 'readonly',
   CollisionSystem: 'readonly',
+  FinishLine: 'readonly',
   GameState: 'readonly',
   Hud: 'readonly',
   InputManager: 'readonly',

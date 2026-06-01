@@ -173,6 +173,9 @@ class Game {
     this._particleGroup = this._createParticleGroup();
     this._particleSystem = new ParticleSystem(this._particleGroup);
 
+    // Cílová čára — nad silnicí, pod auty (vložíme před particleGroup)
+    this._finishLine = new FinishLine(this._svg, this._particleGroup);
+
     this._playerCar = new PlayerCar(this._svg, this._inputManager, spriteImg);
     this._trafficManager = new TrafficManager(this._svg);
     this._policeManager = new PoliceManager(this._svg, this._trafficManager);
@@ -397,6 +400,7 @@ class Game {
 
     // Reset všech systémů
     this._road.reset();
+    this._finishLine.reset();
     this._playerCar.reset();
     this._trafficManager.reset();
     this._policeManager.reset();
@@ -472,6 +476,7 @@ class Game {
 
     // 2. Pohyb silnice + animace hráče
     this._road.update(dt, this._speed);
+    this._finishLine.update(dt, this._speed);
     this._playerCar.update(dt);
 
     // 3. Skóre — vzdálenost + čas závodu
@@ -551,8 +556,8 @@ class Game {
       this._speed,
     );
 
-    // 9. Cíl závodu — dojetí cílové vzdálenosti
-    if (this._scoreSystem.distanceMeters >= RACE.GOAL_METERS) {
+    // 9. Cíl závodu — auto projelo cílovou čárou
+    if (this._finishLine.hasPassed()) {
       this._endGame(false, true);
       return;
     }

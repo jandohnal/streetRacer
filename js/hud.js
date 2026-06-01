@@ -124,11 +124,16 @@ class Hud {
     this._btnClose.classList.remove('hidden');
     this._btnLeaderboard.classList.remove('hidden');
 
-    // Zobraz name entry pro uložení skóre
-    this._nameEntry.classList.remove('hidden');
-    this._inputName.value      = localStorage.getItem('playerName') || '';
-    this._scoreSaveStatus.textContent = '';
-    this._scoreSaveStatus.className   = 'score-save-status';
+    // Zobraz name entry pro uložení skóre — jen pokud hráč dojel nebo narazil (ne busted)
+    if (!busted) {
+      this._nameEntry.classList.remove('hidden');
+      this._btnSubmitScore.disabled     = false;
+      this._inputName.value             = localStorage.getItem('playerName') || '';
+      this._scoreSaveStatus.textContent = '';
+      this._scoreSaveStatus.className   = 'score-save-status';
+    } else {
+      this._nameEntry.classList.add('hidden');
+    }
 
     this._overlay.classList.remove('hidden');
   }
